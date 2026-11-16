@@ -11,7 +11,7 @@ async function main() {
   app.set('trust proxy', 1); // behind the Next.js proxy / load balancer
   configureApp(app);
   const config = new DocumentBuilder()
-    .setTitle('NEXCUST API — DEMONSTRATION')
+    .setTitle('NEXCUST API')
     .setDescription('Prototype API using synthetic data. Not an official Ghana Police Service or Ghana Prisons Service system.')
     .setVersion('0.1.0').addCookieAuth(process.env.SESSION_COOKIE_NAME ?? 'nx_session').build();
   SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));

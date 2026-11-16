@@ -2,7 +2,7 @@
 import { startApp } from './harness';
 
 let h: Awaited<ReturnType<typeof startApp>>;
-const RECORDS = 'police.records@nexcust.demo', COMMANDER = 'police.station@nexcust.demo', NATIONAL = 'police.national@nexcust.demo', PRISON_REC = 'prisons.records@nexcust.demo';
+const RECORDS = 'police.records@nexcust.fourthit.com', COMMANDER = 'police.station@nexcust.fourthit.com', NATIONAL = 'police.national@nexcust.fourthit.com', PRISON_REC = 'prisons.records@nexcust.fourthit.com';
 const uniq = () => `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
 let accra1: string;
 const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString();
@@ -10,7 +10,7 @@ const arrest = (personId: string, over: object = {}) => ({ personId, facilityId:
   detain: true, arrestBasis: 'WITHOUT_WARRANT_S10', reasonsGivenAt: iso(3500_000), rightToLawyerGivenAt: iso(3500_000), languageUsed: 'English', ...over });
 const person = async (over: object = {}) => (await (await h.as(RECORDS)).post('/api/persons').send({ surname: `Acct${uniq()}`, otherNames: 'Demo Person', sex: 'MALE', ...over }).expect(201)).body.id as string;
 
-beforeAll(async () => { h = await startApp(); accra1 = (await h.prisma.facility.findFirstOrThrow({ where: { name: 'DEMO Accra Station 1' } })).id; });
+beforeAll(async () => { h = await startApp(); accra1 = (await h.prisma.facility.findFirstOrThrow({ where: { name: 'Nima Police Station' } })).id; });
 afterAll(async () => { await h.app.close(); });
 
 describe('juvenile identity protection (Act 653 s.3)', () => {
@@ -32,7 +32,7 @@ describe('juvenile identity protection (Act 653 s.3)', () => {
     const rec = (await (await h.as(NATIONAL)).get(`/api/police/persons/${juvenileId}/record`).expect(200)).body;
     expect(rec.arrests).toEqual([]); expect(rec.juvenileRecordsWithheld).toBe(1);
     expect((await (await h.as(RECORDS)).get(`/api/police/persons/${juvenileId}/record`).expect(200)).body.arrests).toHaveLength(1);
-    const ex = (await (await h.as(PRISON_REC)).post('/api/exchange/requests').send({ personId: juvenileId, providingInstitution: 'POLICE', purpose: 'Verify custody history (test)', legalBasis: 'Warrant (demo)' }).expect(201)).body;
+    const ex = (await (await h.as(PRISON_REC)).post('/api/exchange/requests').send({ personId: juvenileId, providingInstitution: 'POLICE', purpose: 'Verify custody history (test)', legalBasis: 'Warrant ' }).expect(201)).body;
     expect(ex.disclosedSummary).toMatchObject({ episodes: [], juvenileRecordsWithheld: 1 });
   });
 });
@@ -44,7 +44,7 @@ describe('search and property (Act 30 s.8)', () => {
     episodeId = (await (await h.as(RECORDS)).post('/api/police/arrests').send(arrest(p)).expect(201)).body.custody.id;
   });
   it('requires a female officer to search a woman unless a reason is recorded', async () => {
-    const a = await h.as(RECORDS); const base = { searchedAt: iso(3000_000), searchingOfficer: 'DEMO Cpl. Mensah' };
+    const a = await h.as(RECORDS); const base = { searchedAt: iso(3000_000), searchingOfficer: 'Cpl. Mensah' };
     await a.post(`/api/police/custody/${episodeId}/search`).send({ ...base, searchingOfficerSex: 'MALE' }).expect(400);
     await a.post(`/api/police/custody/${episodeId}/search`).send({ ...base, searchingOfficerSex: 'MALE', overrideReason: 'No female officer on duty; search of outer garments only (test)' }).expect(201);
     await a.post(`/api/police/custody/${episodeId}/search`).send({ ...base, searchingOfficerSex: 'FEMALE' }).expect(409);
@@ -69,9 +69,9 @@ describe('section 16 monthly return', () => {
     const month = new Date(Date.now() - 3600_000).toISOString().slice(0, 7);
     const r = (await (await h.as(COMMANDER)).get(`/api/police/reports/s16?month=${month}`).expect(200)).body;
     expect(r.rows.some((x: any) => x.person.id === p && x.custodyStatus === 'NOT_DETAINED')).toBe(true);
-    expect(r.stations).toEqual(['DEMO Accra Station 1']);
+    expect(r.stations).toEqual(['Nima Police Station']);
     expect(r.rows.every((x: any) => ['WITHOUT_WARRANT_S10', 'PRIVATE_PERSON_S12'].includes(x.arrestBasis))).toBe(true);
     await (await h.as(COMMANDER)).get('/api/police/reports/s16?month=2026-13').expect(400);
-    await (await h.as('prisons.national@nexcust.demo')).get(`/api/police/reports/s16?month=${month}`).expect(403);
+    await (await h.as('prisons.national@nexcust.fourthit.com')).get(`/api/police/reports/s16?month=${month}`).expect(403);
   });
 });

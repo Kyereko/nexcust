@@ -55,15 +55,19 @@ court_orders ── admissions / sentences / transfers / releases   (legal autho
 
 `organizational_units.path` is `/<root>/<…>/<id>/`. A user assigned at unit U may act on a record when the record's facility unit path starts with U's path. National HQ therefore covers the whole institution; a station covers only itself. Trees of the two institutions never share a root, so a path can never cross institutions.
 
-## 5. Synthetic data (seed)
+## 5. Reference register and synthetic data (seed)
+
+Institutional units are real; everything operational is synthetic.
 
 | Item | Volume |
 |---|---|
-| Persons | 1,000 (`DEMO-NPI-…`, 80% with a `DEMO-GHA-…` identifier) |
-| Police personnel / prison personnel | 200 / 100, each with rank history and postings |
-| Org units / facilities | 60 units (25 real regional command names, the rest `DEMO`); 12 demo stations, 6 demo prisons |
-| Police | 160 incidents, cases, arrests and custody episodes (30 open, 10 past the 48-hour marker), charges, convictions |
-| Prisons | 200 admissions with warrants, 150 in custody, 50 released, transfers, sentences, programmes |
+| Police units | National HQ and 2 directorates, 25 regional commands, 95 divisions, 315 districts, 959 stations and posts (924 VERIFIED, 35 PROVISIONAL), from `docs/research/15-facilities-register.md` via `packages/database/reference/facilities.ts`. Each unit keeps its evidence status and source; 700+ facilities carry a map point (`latitude`, `longitude`, `coordPrecision`: STATION, OFFICIAL_MAP or TOWN) |
+| Prison establishments | Headquarters, 10 regional commands and the 46 custodial establishments (VERIFIED), with published capacities where stated |
+| Persons | About 3,400 (`NX-NPI-…`, 80% with a `GHA-NX…` identifier that can never equal a real Ghana Card number) |
+| Police personnel / prison personnel | 400 / 200, each with rank history and postings (`NX-GPS-…`, `NX-GPRS-…`) |
+| Police | 480 incidents, cases, arrests and custody episodes spread over every regional command (70 open), charges, convictions |
+| Prisons | About 2,200 admissions with warrants, scaled to each establishment's capacity (12–30%), releases, transfers, sentences, programmes |
 | Background checks | 10 applications across the workflow statuses |
 
+References created by the platform carry the `NX-` prefix. Seeded sign-in accounts are role accounts (`@nexcust.fourthit.com`) named by role and post, never after a person.
 All generated from a fixed seed so every environment has identical data.

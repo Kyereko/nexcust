@@ -31,7 +31,7 @@ export class SharedController {
   @Get('health')
   async health() {
     await this.prisma.$queryRaw`SELECT 1`;
-    return { status: 'ok', environment: process.env.NEXT_PUBLIC_ENV_LABEL ?? 'DEMONSTRATION', notice: 'Synthetic data only. Not an official system.' };
+    return { status: 'ok', environment: 'PROTOTYPE', notice: 'Synthetic records only. Not an official Ghana Police Service or Ghana Prisons Service system.' };
   }
 
   /**

@@ -2,7 +2,7 @@
   "name": "nexcust",
   "private": true,
   "version": "0.1.0",
-  "description": "NEXCUST \u2014 DEMONSTRATION prototype (synthetic data only). Not an official Ghana Police Service or Ghana Prisons Service system.",
+  "description": "NEXCUST \u2014 connected police and prisons records. Prototype with synthetic records; not an official Ghana Police Service or Ghana Prisons Service system. Powered by Fourth IT.",
   "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=20"

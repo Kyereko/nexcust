@@ -376,6 +376,10 @@ model Facility {
   name              String
   town              String?
   capacity          Int?
+  /// WGS84 point for maps. coordPrecision says what the point is: the building (STATION / FACILITY / OFFICIAL_MAP) or only its town (TOWN).
+  latitude          Float?
+  longitude         Float?
+  coordPrecision    String?
   functions         String[]           @default([])
   operationalStatus String             @default("OPERATIONAL")
   isSynthetic       Boolean            @default(true)

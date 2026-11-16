@@ -13,22 +13,22 @@ async function signOut(page: Page) { await page.getByRole('button', { name: 'Sig
 test('Workflows D and E — admit, transfer between establishments, then release with authorization', async ({ page }) => {
   const surname = `Edwee${Date.now()}`;
   // D: admission by the Ashanti records officer
-  await signIn(page, 'prisons.records@nexcust.demo');
+  await signIn(page, 'prisons.records@nexcust.fourthit.com');
   await page.locator('aside').getByRole('link', { name: 'Admissions & Custody', exact: true }).click();
   await page.getByRole('link', { name: 'Register new person' }).click();
   await page.getByLabel('Surname').fill(surname);
   await page.getByLabel('Other names').fill('Kojo Demo');
   await page.getByRole('button', { name: /Check for existing records/ }).click();
   await expect(page.getByRole('heading', { name: 'Admit to custody' })).toBeVisible();
-  await page.getByLabel('Issuing court').fill('DEMO Circuit Court A');
-  await page.getByLabel('Warrant reference').fill(`DEMO-WRT-E2E-${Date.now()}`);
+  await page.getByLabel('Issuing court').fill('Circuit Court, Accra');
+  await page.getByLabel('Warrant reference').fill(`NX-WRT-E2E-${Date.now()}`);
   await page.getByLabel('Next court date (remand)').fill(new Date(Date.now() + 10 * 86400_000).toISOString().slice(0, 10));
-  await page.getByLabel('Received from (escorting officer)').fill('DEMO Sgt. Escort, Accra Station 1');
+  await page.getByLabel('Received from (escorting officer)').fill('Sgt. Escort, Nima Police Station');
   await page.getByLabel('Condition at handover').fill('Sober, no visible injuries');
   await page.getByLabel('Screened by').selectOption('MEDICAL_OFFICER');
   await page.getByRole('button', { name: /admit/ }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Admitted as DEMO-PN-' })).toBeVisible();
-  await expect(page.getByText('DEMO Ashanti Central Prison').first()).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Admitted as NX-PN-' })).toBeVisible();
+  await expect(page.getByText('Kumasi Central Prison').first()).toBeVisible();
   await expect(page.getByText(/Form 14 — remand commitment for trial/)).toBeVisible();
   await expect(page.getByText('CURRENT', { exact: true })).toBeVisible(); // remand warrant status
   const prisonerUrl = page.url().split('?')[0];
@@ -41,36 +41,36 @@ test('Workflows D and E — admit, transfer between establishments, then release
 
   // E: transfer initiated by records, approved by the officer-in-charge, received by the Northern establishment
   await page.goto(prisonerUrl);
-  await page.getByLabel('Receiving establishment').selectOption({ label: 'DEMO Northern Central Prison' });
+  await page.getByLabel('Receiving establishment').selectOption({ label: 'Tamale Central Prison' });
   await page.getByLabel('Reason').fill('Decongestion (browser test)');
   await page.getByRole('button', { name: 'Initiate transfer' }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Transfer DEMO-TRF-' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Transfer NX-TRF-' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'prisons.superintendent@nexcust.demo');
+  await signIn(page, 'prisons.superintendent@nexcust.fourthit.com');
   await page.locator('aside').getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).getByRole('button', { name: 'Approve & dispatch' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'in transit' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'prisons.records.north@nexcust.demo');
+  await signIn(page, 'prisons.records.north@nexcust.fourthit.com');
   await page.locator('aside').getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).getByRole('button', { name: 'Confirm arrival' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Arrival confirmed' })).toBeVisible();
   await page.goto(prisonerUrl);
-  await expect(page.getByText(/DEMO Ashanti Central Prison → DEMO Northern Central Prison/)).toBeVisible(); // both facilities in the history
-  await page.getByLabel('Legal authority').fill('Bail granted by DEMO Circuit Court A (browser test)');
+  await expect(page.getByText(/Kumasi Central Prison → Tamale Central Prison/)).toBeVisible(); // both facilities in the history
+  await page.getByLabel('Legal authority').fill('Bail granted by Circuit Court, Accra (browser test)');
   await page.getByRole('button', { name: 'Initiate release' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'awaits authorization' })).toBeVisible();
   await signOut(page);
 
   // the sending establishment no longer holds the prisoner
-  await signIn(page, 'prisons.records@nexcust.demo');
+  await signIn(page, 'prisons.records@nexcust.fourthit.com');
   await page.goto(prisonerUrl);
   await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'prisons.national@nexcust.demo');
+  await signIn(page, 'prisons.national@nexcust.fourthit.com');
   await page.locator('aside').getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).filter({ hasText: 'BAIL' }).getByRole('button', { name: 'Authorize release' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Release authorized' })).toBeVisible();
@@ -79,7 +79,7 @@ test('Workflows D and E — admit, transfer between establishments, then release
   await expect(page.getByRole('button', { name: 'Initiate release' })).toHaveCount(0);
   await signOut(page);
   // the receiving establishment's records officer returns the warrant to the issuing court
-  await signIn(page, 'prisons.records.north@nexcust.demo');
+  await signIn(page, 'prisons.records.north@nexcust.fourthit.com');
   await page.goto('/prisons/transfers');
   await page.getByRole('row').filter({ hasText: surname }).filter({ hasText: 'bail' }).getByRole('button', { name: 'Warrant returned to court' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'returned to the issuing court' })).toBeVisible();

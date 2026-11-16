@@ -11,7 +11,7 @@ export async function ExchangePanel({ personId, provider, returnTo, exchangeId, 
   return (
     <Card className="p-5">
       <h2 className="font-semibold">{provider === 'POLICE' ? 'Police custody check' : 'Prison custody check'}</h2>
-      <p className="mt-1 text-sm text-slate-600">Request a minimal summary from the {other} (demonstration). Your purpose and legal basis are recorded with the request and in the audit trail.</p>
+      <p className="mt-1 text-sm text-slate-600">Request a minimal summary from the {other}. Your purpose and legal basis are recorded with the request and in the audit trail.</p>
       {s ? (
         <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">
           <div className="mb-2 font-medium">{s.kind === 'POLICE_CUSTODY_SUMMARY' ? (s.currentlyInPoliceCustody ? 'Currently in police custody' : 'Not currently in police custody') : (s.currentlyInPrisonCustody ? 'Currently held in prison custody' : 'Not currently held in prison custody')} · as at {fmtDateTime(s.asAt)}</div>

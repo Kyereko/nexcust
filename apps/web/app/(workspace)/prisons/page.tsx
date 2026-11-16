@@ -10,7 +10,7 @@ export default async function PrisonsDashboard() {
   const expired = remand.rows.filter((r: any) => r.state === 'EXPIRED').length;
   return (
     <>
-      <PageHeader title="Prisons dashboard" subtitle={`Live figures for your jurisdiction · ${d.facilities.length} establishment${d.facilities.length === 1 ? '' : 's'} in scope`} />
+      <PageHeader title="Prisons dashboard" subtitle={`Live figures for your jurisdiction · ${d.facilities.length} establishment${d.facilities.length === 1 ? '' : 's'} in scope · synthetic records`} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <Stat label="Population" value={d.population} hint={`Authorized capacity ${d.capacity}`} />
         <Stat label="Occupancy" value={d.occupancyRate === null ? '—' : `${d.occupancyRate}%`} tone={(d.occupancyRate ?? 0) > 100 ? 'alert' : 'default'} />

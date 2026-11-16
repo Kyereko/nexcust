@@ -19,14 +19,14 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   const a = user.assignments[0];
   const role = tester ? 'Tester · full access except administration' : `${a?.roleName ?? ''}${a?.orgUnitName ? ` · ${a.orgUnitName}` : ''}`;
   return (
-    <div className="flex min-h-[calc(100vh-28px)]">
+    <div className="flex min-h-screen">
       <aside className="hidden w-64 shrink-0 flex-col bg-brand text-white md:flex">
         <div className="border-b border-white/10 px-5 py-5">
           <Wordmark inverse size="sm" />
           <div className="mt-1.5 pl-[30px] text-xs font-medium uppercase tracking-[0.2em] text-white/60"><WorkspaceLabel menus={menus} /></div>
         </div>
         <WorkspaceNav menus={menus} />
-        <div className="mt-auto px-5 py-4 text-[11px] text-white/50">Powered by Fourth IT</div>
+        <div className="mt-auto px-5 py-4 text-[11px] leading-relaxed text-white/50">Prototype · synthetic records<br />Powered by Fourth IT</div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-4 border-b border-line bg-white px-6 py-3">

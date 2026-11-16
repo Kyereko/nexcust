@@ -12,10 +12,10 @@ export default async function VerifyResult({ params }: { params: Promise<{ code:
   const found = 'certificateNumber' in r;
   return (
     <main className="mx-auto max-w-xl px-6 py-12">
-      <Wordmark size="md" /><div className="mt-1 text-xs tracking-[0.2em] text-slate-500">DEMONSTRATION</div>
+      <Wordmark size="md" />
       <h1 className="mt-6 text-3xl font-semibold tracking-tight text-brand">Certificate verification</h1>
       <div role="status" className={`mt-6 rounded-lg border p-5 ${r.valid ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50'}`}>
-        <div className={`text-lg font-semibold ${r.valid ? 'text-emerald-900' : 'text-red-900'}`}>{r.valid ? '✓ Authentic and valid (demonstration certificate)' : found ? `✕ Certificate ${r.status?.toLowerCase()}` : '✕ Not verified'}</div>
+        <div className={`text-lg font-semibold ${r.valid ? 'text-emerald-900' : 'text-red-900'}`}>{r.valid ? '✓ Authentic and valid (NEXCUST specimen certificate)' : found ? `✕ Certificate ${r.status?.toLowerCase()}` : '✕ Not verified'}</div>
         {!found && <p className="mt-1 text-sm text-red-900">{r.message}</p>}
         {found && (
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -30,7 +30,7 @@ export default async function VerifyResult({ params }: { params: Promise<{ code:
           </dl>
         )}
       </div>
-      <p className="mt-4 text-xs text-slate-500">Online verification is a NEXCUST demonstration feature; the Ghana Police Service offers a separate &ldquo;Authentication of Police Clearance&rdquo; service. This prototype holds synthetic data only. A real police clearance certificate can only be verified through the Ghana Police Service.</p>
+      <p className="mt-4 text-xs text-slate-500">Online verification is a NEXCUST feature; the Ghana Police Service offers a separate &ldquo;Authentication of Police Clearance&rdquo; service. This prototype holds synthetic data only. A real police clearance certificate can only be verified through the Ghana Police Service.</p>
       <Link href="/verify" className="mt-6 inline-block text-sm underline">Verify another code</Link>
     </main>
   );

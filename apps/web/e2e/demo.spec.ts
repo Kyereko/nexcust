@@ -15,29 +15,29 @@ test('unauthenticated visitors are sent to sign-in', async ({ page }) => {
 });
 
 test('police login opens the police workspace with live dashboard figures', async ({ page }) => {
-  await signIn(page, 'police.national@nexcust.demo');
+  await signIn(page, 'police.national@nexcust.fourthit.com');
   await expect(page).toHaveURL(/\/police$/);
   await expect(page.getByRole('heading', { name: 'Police dashboard' })).toBeVisible();
   await expect(page.getByText('In police custody')).toBeVisible();
   await page.locator('aside').getByRole('link', { name: 'Arrests & Custody', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Arrests & custody' })).toBeVisible();
-  await page.getByRole('link', { name: /DEMO-CUS-/ }).first().click();
+  await page.getByRole('link', { name: /NX-CUS-/ }).first().click();
   await expect(page.getByText('Movement history (immutable)')).toBeVisible();
 });
 
 test('prison login opens the prisons workspace and the registry is searchable', async ({ page }) => {
-  await signIn(page, 'prisons.records@nexcust.demo');
+  await signIn(page, 'prisons.records@nexcust.fourthit.com');
   await expect(page).toHaveURL(/\/prisons$/);
   await expect(page.getByRole('heading', { name: 'Prisons dashboard' })).toBeVisible();
   await page.locator('aside').getByRole('link', { name: 'Prisoner Registry', exact: true }).click();
-  await page.getByLabel('Search', { exact: true }).fill('DEMO-PN');
+  await page.getByLabel('Search', { exact: true }).fill('NX-PN');
   await page.getByRole('button', { name: 'Search' }).click();
-  await expect(page.getByRole('link', { name: /DEMO-PN-/ }).first()).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'DEMO Northern Central Prison' })).toHaveCount(0); // other establishments are out of scope
+  await expect(page.getByRole('link', { name: /NX-PN-/ }).first()).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Tamale Central Prison' })).toHaveCount(0); // other establishments are out of scope
 });
 
 test('a station officer sees only their own station', async ({ page }) => {
-  await signIn(page, 'police.records@nexcust.demo');
+  await signIn(page, 'police.records@nexcust.fourthit.com');
   await expect(page.getByRole('heading', { name: 'Police dashboard' })).toBeVisible();
   await page.locator('aside').getByRole('link', { name: 'Stations & Commands', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Stations & commands' })).toBeVisible();
@@ -45,22 +45,22 @@ test('a station officer sees only their own station', async ({ page }) => {
 });
 
 test('cross-institution access is denied and appears in the audit trail', async ({ page }) => {
-  await signIn(page, 'prisons.records@nexcust.demo');
+  await signIn(page, 'prisons.records@nexcust.fourthit.com');
   await expect(page).toHaveURL(/\/prisons$/);
   await page.goto('/police/custody');
   await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login/);
-  await signIn(page, 'auditor@nexcust.demo');
+  await signIn(page, 'auditor@nexcust.fourthit.com');
   await expect(page).toHaveURL(/\/audit$/);
-  await page.getByLabel('Search', { exact: true }).fill('prisons.records@nexcust.demo');
+  await page.getByLabel('Search', { exact: true }).fill('prisons.records@nexcust.fourthit.com');
   await page.getByLabel('Status').selectOption('DENIED');
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('cell', { name: 'access.denied' }).first()).toBeVisible();
 });
 
 test('rank catalogue shows evidence status as reference data', async ({ page }) => {
-  await signIn(page, 'police.hr@nexcust.demo');
+  await signIn(page, 'police.hr@nexcust.fourthit.com');
   await expect(page.getByRole('heading', { name: 'Police dashboard' })).toBeVisible();
   await page.locator('aside').getByRole('link', { name: 'Administration', exact: true }).click();
   await expect(page).toHaveURL(/\/police\/administration$/);

@@ -17,7 +17,7 @@ class ExchangeDto {
  * Authorized information exchange — the ONLY path by which one institution sees the other's records.
  * A request names a person, a purpose and a legal basis; the answer is a minimal, fixed summary
  * (status and dates, no case narrative), stored with the request and audited. Disclosure scope is
- * a demonstration assumption pending an inter-agency agreement.
+ * a prototype assumption pending an inter-agency agreement.
  */
 @ApiTags('exchange')
 @Controller('exchange/requests')

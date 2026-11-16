@@ -27,8 +27,8 @@ function gateOk(req: NextRequest): boolean {
 
 export function middleware(req: NextRequest) {
   if (!gateOk(req)) {
-    return new NextResponse('NEXCUST demonstration — authorized viewers only.', {
-      status: 401, headers: { 'WWW-Authenticate': 'Basic realm="NEXCUST demonstration", charset="UTF-8"', 'Cache-Control': 'no-store' },
+    return new NextResponse('NEXCUST — authorised viewers only.', {
+      status: 401, headers: { 'WWW-Authenticate': 'Basic realm="NEXCUST", charset="UTF-8"', 'Cache-Control': 'no-store' },
     });
   }
   if (req.nextUrl.pathname.startsWith('/api/')) {

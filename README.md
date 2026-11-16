@@ -4,11 +4,11 @@
 
 Integrated police and prisons records management for Ghana. Powered by Fourth IT.
 
-> **DEMONSTRATION ONLY.** Synthetic data. This is not an official system of the Ghana Police Service or the Ghana Prisons Service, holds no real records, and is not connected to any government system.
+> **Prototype.** Police units and prison establishments are the Services' published lists (with evidence status); every person, officer, case and custody record is synthetic. NEXCUST is not an official system of the Ghana Police Service or the Ghana Prisons Service, holds no real records, and is not connected to any government system.
 
 ## What works today
 
-- Sign-in with server-side sessions; 15 demonstration accounts across 13 roles
+- Sign-in with server-side sessions; 15 seeded role accounts across 13 roles, and email invitations for testers
 - Police and Prisons workspaces with live dashboards from the database
 - Custody register, case register, prisoner registry, personnel (rank / appointment / posting shown separately), stations, prison facilities and occupancy
 - Access control by role **and** command-tree jurisdiction, enforced in the API
@@ -16,7 +16,7 @@ Integrated police and prisons records management for Ghana. Powered by Fourth IT
 - Ghana institutional reference data (ranks, appointments, unit types) with evidence status
 - Police workflows: person search and registration with duplicate review, arrest and custody through to authorized closure, case management, officer posting (propose → approve → confirm)
 - Prisons workflows: admission against a verified warrant, transfer (initiate → approve and dispatch → receiving establishment confirms), release (initiate → second officer authorizes), housing, rehabilitation enrollment, officer postings
-- Police clearance modelled on the Ghana Police Service eServices portal: published services and fees, payment, fingerprint appointment and attendance, criminal ident, investigation, signature by an authorised signatory for the Director-General, CID, six-month validity, Ghana Post dispatch, verification at `/verify` (demonstration feature)
+- Police clearance modelled on the Ghana Police Service eServices portal: published services and fees, payment, fingerprint appointment and attendance, criminal ident, investigation, signature by an authorised signatory for the Director-General, CID, six-month validity, Ghana Post dispatch, verification at `/verify` (a NEXCUST feature; certificates are watermarked SPECIMEN — NOT VALID)
 - Ghana legal alignment: rights information at arrest, 48-hour clock from arrest, police enquiry bail bonds, juveniles, Act 30 warrant forms, remand-warrant expiry flags, remission entries, release types and warrant return (see `docs/research/14`)
 - Authorized exchange between police and prisons (purpose and legal basis recorded)
 - Reports rolled up by regional command with monthly trends
@@ -79,25 +79,25 @@ The database needs the `pg_trgm` extension; the migration creates it, which requ
 
 ## Demonstration accounts
 
-Password for all accounts: the value of `DEMO_PASSWORD` in `.env` (default `Demo!Pass2026`).
+Password for all seeded role accounts: the value of `DEMO_PASSWORD` in `.env` (default `Demo!Pass2026`). Testers and other people are invited from Users & access and choose their own password.
 
 | Email | Role | Jurisdiction |
 |---|---|---|
-| admin@nexcust.demo | Platform Administrator | Platform (no operational records) |
-| police.national@nexcust.demo | Police National Administrator | National Police Headquarters |
-| police.regional@nexcust.demo | Police Regional Commander | Accra Regional Police Command |
-| police.station@nexcust.demo | Police Station Commander | DEMO Accra Station 1 |
-| police.records@nexcust.demo | Police Records Officer | DEMO Accra Station 1 |
-| police.records.kumasi@nexcust.demo | Police Records Officer | DEMO Ashanti Station 1 |
-| police.hr@nexcust.demo | Police HR Officer | National Police Headquarters |
-| police.bgcheck@nexcust.demo | Background Check Officer | National Police Headquarters |
-| prisons.national@nexcust.demo | Prisons National Administrator | Prisons Service Headquarters |
-| prisons.superintendent@nexcust.demo | Prison Superintendent (Officer-in-Charge) | DEMO Ashanti Central Prison |
-| prisons.records@nexcust.demo | Prison Records Officer | DEMO Ashanti Central Prison |
-| prisons.records.north@nexcust.demo | Prison Records Officer | DEMO Northern Central Prison |
-| prisons.hr@nexcust.demo | Prison HR Officer | Prisons Service Headquarters |
-| auditor@nexcust.demo | Auditor | All audit events, read-only |
-| applicant@nexcust.demo | Public Applicant | Own applications only |
+| admin@nexcust.fourthit.com | Platform Administrator | Platform (no operational records) |
+| police.national@nexcust.fourthit.com | Police National Administrator | National Police Headquarters |
+| police.regional@nexcust.fourthit.com | Police Regional Commander | Accra Regional Police Command |
+| police.station@nexcust.fourthit.com | Police Station Commander | Nima Police Station |
+| police.records@nexcust.fourthit.com | Police Records Officer | Nima Police Station |
+| police.records.kumasi@nexcust.fourthit.com | Police Records Officer | Manhyia Police Station |
+| police.hr@nexcust.fourthit.com | Police HR Officer | National Police Headquarters |
+| police.bgcheck@nexcust.fourthit.com | Background Check Officer | National Police Headquarters |
+| prisons.national@nexcust.fourthit.com | Prisons National Administrator | Prisons Service Headquarters |
+| prisons.superintendent@nexcust.fourthit.com | Prison Superintendent (Officer-in-Charge) | Kumasi Central Prison |
+| prisons.records@nexcust.fourthit.com | Prison Records Officer | Kumasi Central Prison |
+| prisons.records.north@nexcust.fourthit.com | Prison Records Officer | Tamale Central Prison |
+| prisons.hr@nexcust.fourthit.com | Prison HR Officer | Prisons Service Headquarters |
+| auditor@nexcust.fourthit.com | Auditor | All audit events, read-only |
+| applicant@nexcust.fourthit.com | Public Applicant | Own applications only |
 
 ## Tests
 
@@ -123,7 +123,7 @@ docker compose up --build
 
 Starts PostgreSQL, runs migrations and the seed, then the API and web app. The container files were written without a Docker daemon available and have **not yet been run**; verifying them is a Day 5 task.
 
-## Deployment (demonstration environment)
+## Deployment (private prototype)
 
 Hosted privately at `https://nexcust.fourthit.com` on Vercel (web + API) with a Supabase Postgres database in London. Every push to `main` deploys. Architecture, environment variables and access controls: `docs/06-hosted-demonstration.md`.
 

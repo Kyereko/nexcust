@@ -9,7 +9,7 @@ test('the landing page shows the animated wordmark and signs in from its dialog'
   await page.getByRole('button', { name: 'Sign in to NEXCUST' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-  await dialog.getByLabel('Email').fill('police.national@nexcust.demo');
+  await dialog.getByLabel('Email').fill('police.national@nexcust.fourthit.com');
   await dialog.getByLabel('Password').fill(PW);
   await dialog.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/police$/);
@@ -17,7 +17,7 @@ test('the landing page shows the animated wordmark and signs in from its dialog'
 
 test('an administrator invites a tester, who sets a password and works across Police and Prisons but not administration', async ({ browser, page }) => {
   await page.goto('/login');
-  await page.getByLabel('Email').fill('admin@nexcust.demo'); await page.getByLabel('Password').fill(PW);
+  await page.getByLabel('Email').fill('admin@nexcust.fourthit.com'); await page.getByLabel('Password').fill(PW);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/admin$/);
   const email = `e2e.tester.${Date.now()}@example.org`;

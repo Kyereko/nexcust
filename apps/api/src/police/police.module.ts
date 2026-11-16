@@ -1,5 +1,6 @@
 import { Controller, ForbiddenException, Get, Module, NotFoundException, Param, ParseUUIDPipe, Query, Req } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.module';
 import { AuditService } from '../audit/audit.service';
 import { RequirePermission } from '../auth/decorators';
@@ -19,6 +20,11 @@ const facilityScope = (scope: AccessScope) => ({ facility: { ...POLICE, orgUnit:
 const personName = (q?: string) => q ? { OR: [{ surname: { contains: q, mode: 'insensitive' as const } }, { otherNames: { contains: q, mode: 'insensitive' as const } }, { indexNumber: { contains: q, mode: 'insensitive' as const } }] } : {};
 
 @ApiTags('police')
+class StationQuery extends ListQuery {
+  /** Path of a regional command unit, to list only its stations. */
+  @ApiPropertyOptional() @IsOptional() @IsString() @Matches(/^[\/0-9a-f-]+$/) @MaxLength(200) command?: string;
+}
+
 @Controller('police')
 export class PoliceController {
   constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
@@ -34,14 +40,14 @@ export class PoliceController {
       this.prisma.policeCase.count({ where: { ...fs, status: { not: 'CLOSED' } } }),
       this.prisma.policePersonnel.count({ where: { currentOrgUnit: unitWhere(req.scope!), status: 'ACTIVE' } }),
       this.prisma.facility.count({ where: { ...POLICE, orgUnit: unitWhere(req.scope!) } }),
-      this.prisma.facility.findMany({
-        where: { ...POLICE, orgUnit: unitWhere(req.scope!) }, orderBy: { name: 'asc' },
-        select: { id: true, name: true, capacity: true, _count: { select: { policeCustody: { where: { status: 'IN_CUSTODY' } } } } },
-      }),
+      // Stations holding people now, busiest first (a national scope has hundreds of stations, most with nobody in cells).
+      this.prisma.policeCustodyEpisode.groupBy({ by: ['facilityId'], where: { ...fs, status: 'IN_CUSTODY' }, _count: { _all: true } }),
     ]);
+    const top = byStation.sort((a, b) => b._count._all - a._count._all).slice(0, 12);
+    const names = new Map((await this.prisma.facility.findMany({ where: { id: { in: top.map((t) => t.facilityId) } }, select: { id: true, name: true, capacity: true } })).map((f) => [f.id, f]));
     return {
-      scope: req.scope!.all ? 'ALL' : 'JURISDICTION', inCustody, pastDeadline, arrests30d, openCases, personnel, stations,
-      custodyByStation: byStation.map((f) => ({ id: f.id, name: f.name, capacity: f.capacity, inCustody: f._count.policeCustody })),
+      scope: req.scope!.all ? 'ALL' : 'JURISDICTION', inCustody, pastDeadline, arrests30d, openCases, personnel, stations, stationsHolding: byStation.length,
+      custodyByStation: top.map((t) => ({ id: t.facilityId, name: names.get(t.facilityId)?.name ?? '', capacity: names.get(t.facilityId)?.capacity ?? null, inCustody: t._count._all })),
     };
   }
 
@@ -161,6 +167,32 @@ export class PoliceController {
       this.prisma.policePersonnel.count({ where }),
     ]);
     return page(items, total, q);
+  }
+
+  /** Searchable, paginated station register with each unit's command chain, evidence status and source. */
+  @Get('stations/directory')
+  @RequirePermission('police.facility.read')
+  async directory(@Req() req: AuthedRequest, @Query() q: StationQuery) {
+    const scoped = unitWhere(req.scope!);
+    const where = { ...POLICE, orgUnit: { AND: [scoped, ...(q.command ? [{ path: { startsWith: q.command } }] : [])] },
+      ...(q.q ? { OR: [{ name: { contains: q.q, mode: 'insensitive' as const } }, { town: { contains: q.q, mode: 'insensitive' as const } }] } : {}) };
+    const chain = { select: { name: true, type: { select: { code: true } }, parent: { select: { name: true, type: { select: { code: true } }, parent: { select: { name: true, type: { select: { code: true } }, parent: { select: { name: true, type: { select: { code: true } } } } } } } } } };
+    const [rows, total, commands] = await Promise.all([
+      this.prisma.facility.findMany({ where, orderBy: { name: 'asc' }, ...paging(q),
+        select: { id: true, code: true, name: true, town: true, coordPrecision: true, facilityType: { select: { name: true } },
+          orgUnit: { select: { verificationStatus: true, sourceRef: true, parent: chain } }, _count: { select: { policeCustody: { where: { status: 'IN_CUSTODY' } } } } } }),
+      this.prisma.facility.count({ where }),
+      this.prisma.organizationalUnit.findMany({ where: { ...POLICE, type: { code: 'REGIONAL_COMMAND' } }, orderBy: { name: 'asc' }, select: { name: true, path: true } }),
+    ]);
+    const sc = req.scope!; // commands the caller works in or above
+    const visible = commands.filter((c) => sc.all || sc.paths.some((p) => c.path.startsWith(p) || p.startsWith(c.path)));
+    const items = rows.map((r) => {
+      const up: Record<string, string> = {};
+      for (let u: any = r.orgUnit.parent; u; u = u.parent) up[u.type.code] = u.name;
+      return { id: r.id, code: r.code, name: r.name, town: r.town, type: r.facilityType.name, district: up.DISTRICT ?? null, division: up.DIVISION ?? null, command: up.REGIONAL_COMMAND ?? null,
+        status: r.orgUnit.verificationStatus, source: r.orgUnit.sourceRef, mapped: r.coordPrecision, inCustody: r._count.policeCustody };
+    });
+    return { ...page(items, total, q), commands: visible };
   }
 
   @Get('stations')

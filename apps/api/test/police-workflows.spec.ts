@@ -2,15 +2,15 @@
 import { startApp } from './harness';
 
 let h: Awaited<ReturnType<typeof startApp>>;
-const RECORDS = 'police.records@nexcust.demo', COMMANDER = 'police.station@nexcust.demo', KUMASI = 'police.records.kumasi@nexcust.demo';
-const HR = 'police.hr@nexcust.demo', NATIONAL = 'police.national@nexcust.demo', REGIONAL = 'police.regional@nexcust.demo';
+const RECORDS = 'police.records@nexcust.fourthit.com', COMMANDER = 'police.station@nexcust.fourthit.com', KUMASI = 'police.records.kumasi@nexcust.fourthit.com';
+const HR = 'police.hr@nexcust.fourthit.com', NATIONAL = 'police.national@nexcust.fourthit.com', REGIONAL = 'police.regional@nexcust.fourthit.com';
 const uniq = () => `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
 let accra1: string, ashanti1: string;
 
 beforeAll(async () => {
   h = await startApp();
-  accra1 = (await h.prisma.facility.findFirstOrThrow({ where: { name: 'DEMO Accra Station 1' } })).id;
-  ashanti1 = (await h.prisma.facility.findFirstOrThrow({ where: { name: 'DEMO Ashanti Station 1' } })).id;
+  accra1 = (await h.prisma.facility.findFirstOrThrow({ where: { name: 'Nima Police Station' } })).id;
+  ashanti1 = (await h.prisma.facility.findFirstOrThrow({ where: { name: 'Manhyia Police Station' } })).id;
 });
 afterAll(async () => { await h.app.close(); });
 
@@ -18,14 +18,14 @@ describe('identity records (no automatic merging)', () => {
   it('blocks creation when similar names exist until an officer confirms it is a different person', async () => {
     const a = await h.as(RECORDS); const tag = uniq(); const body = { surname: `Testsurname${tag}`, otherNames: 'Kwame Demo', sex: 'MALE', dateOfBirth: '1990-04-02' };
     const first = (await a.post('/api/persons').send(body).expect(201)).body;
-    expect(first.indexNumber).toMatch(/^DEMO-NPI-/);
+    expect(first.indexNumber).toMatch(/^NX-NPI-/);
     const dup = await a.post('/api/persons').send(body).expect(409);
     expect(dup.body.code).toBe('POSSIBLE_DUPLICATES'); expect(dup.body.matches[0].id).toBe(first.id);
     const second = (await a.post('/api/persons').send({ ...body, confirmedNotDuplicate: true }).expect(201)).body;
     expect(second.id).not.toBe(first.id); // two records, never merged on name alone
   });
   it('treats an identifier already on file as a hard stop', async () => {
-    const a = await h.as(RECORDS); const tag = uniq(); const id = { identifierType: 'GHANA_CARD', identifierValue: `DEMO-GHA-T${tag}` };
+    const a = await h.as(RECORDS); const tag = uniq(); const id = { identifierType: 'GHANA_CARD', identifierValue: `GHA-NXT${tag}` };
     await a.post('/api/persons').send({ surname: `Idsurname${tag}`, otherNames: 'Ama Demo', sex: 'FEMALE', ...id }).expect(201);
     const res = await a.post('/api/persons').send({ surname: `Other${tag}`, otherNames: 'Esi Demo', sex: 'FEMALE', ...id, confirmedNotDuplicate: true }).expect(409);
     expect(res.body.code).toBe('IDENTIFIER_EXISTS');
@@ -103,7 +103,7 @@ describe('Workflow A — arrest and custody', () => {
     await c.post(`/api/police/custody/${custodyId}/review`).expect(201);
     await c.post(`/api/police/custody/${custodyId}/close`).send({ disposition: 'RELEASED_ON_BAIL', dispositionNote: 'Police enquiry bail granted (test)' }).expect(400); // bond required
     await c.post(`/api/police/custody/${custodyId}/close`).send({ disposition: 'RELEASED_ON_BAIL', dispositionNote: 'Police enquiry bail granted (test)',
-      bailBond: { amountGhs: 5000, sureties: [{ name: 'Ama Surety', idRef: 'DEMO-GHA-SURETY-1', address: 'DEMO address, Accra' }], reportTo: 'POLICE_STATION', reportPlace: 'DEMO Accra Station 1',
+      bailBond: { amountGhs: 5000, sureties: [{ name: 'Ama Surety', idRef: 'GHA-NXSURETY-1', address: 'House 12, Nima, Accra' }], reportTo: 'POLICE_STATION', reportPlace: 'Nima Police Station',
         reportAt: new Date(Date.now() + 7 * 86400_000).toISOString() } }).expect(201);
     const ep = await h.prisma.policeCustodyEpisode.findUniqueOrThrow({ where: { id: custodyId }, include: { bailBond: true } });
     expect(ep).toMatchObject({ status: 'RELEASED_ON_BAIL' }); expect(ep.bailBond).toMatchObject({ amountGhs: 5000, reportTo: 'POLICE_STATION' }); expect(ep.closedAt).not.toBeNull(); expect(ep.dispositionAuthorizedById).not.toBe(ep.openedById);
@@ -121,7 +121,7 @@ describe('Workflow A — arrest and custody', () => {
   it('creates and updates a case within jurisdiction only', async () => {
     const a = await h.as(RECORDS);
     const c = (await a.post('/api/police/cases').send({ facilityId: accra1, title: 'Test case — stealing', offenceCategory: 'Stealing', incidentSummary: 'Synthetic test incident summary.', suspectPersonId: personId }).expect(201)).body;
-    expect(c.caseNumber).toMatch(/^DEMO-CASE-/);
+    expect(c.caseNumber).toMatch(/^NX-CASE-/);
     await a.patch(`/api/police/cases/${c.id}`).send({ status: 'BEFORE_COURT' }).expect(200);
     expect((await a.get(`/api/police/cases/${c.id}`).expect(200)).body.status).toBe('BEFORE_COURT');
     await (await h.as(KUMASI)).patch(`/api/police/cases/${c.id}`).send({ status: 'CLOSED' }).expect(403);
@@ -132,8 +132,8 @@ describe('Workflow A — arrest and custody', () => {
 describe('Workflow B — police posting (propose → approve → confirm)', () => {
   let officerId: string, fromUnit: string, toUnit: string, postingId: string;
   beforeAll(async () => {
-    toUnit = (await h.prisma.organizationalUnit.findFirstOrThrow({ where: { name: 'DEMO Accra Station 1' } })).id;
-    const officer = await h.prisma.policePersonnel.findFirstOrThrow({ where: { currentOrgUnit: { name: { startsWith: 'DEMO Northern Station' } }, postings: { none: { status: { in: ['PROPOSED', 'APPROVED'] } } } } });
+    toUnit = (await h.prisma.organizationalUnit.findFirstOrThrow({ where: { name: 'Nima Police Station' } })).id;
+    const officer = await h.prisma.policePersonnel.findFirstOrThrow({ where: { currentOrgUnit: { code: { startsWith: 'GPS-ST-NORTHERN-' } }, postings: { none: { status: { in: ['PROPOSED', 'APPROVED'] } } } } });
     officerId = officer.id; fromUnit = officer.currentOrgUnitId;
   });
   it('HR proposes; HR cannot approve their own proposal', async () => {

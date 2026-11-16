@@ -34,7 +34,7 @@ export async function NewPersonForm({ ws, sp }: { ws: 'police' | 'prisons'; sp: 
           <Label text="Hometown"><input name="hometown" maxLength={80} defaultValue={sp.hometown} className={inputCls} /></Label>
           <div />
           <Label text="Identifier type"><select name="identifierType" defaultValue={sp.identifierType ?? 'GHANA_CARD'} className={inputCls}><option value="GHANA_CARD">Ghana Card</option><option value="PASSPORT">Passport</option><option value="DRIVERS_LICENCE">Driver&apos;s licence</option><option value="VOTER_ID">Voter ID</option><option value="OTHER">Other</option></select></Label>
-          <Label text="Identifier number (optional)" hint="Demonstration only: enter a made-up value, never a real ID number."><input name="identifierValue" maxLength={40} defaultValue={sp.identifierValue} className={inputCls} /></Label>
+          <Label text="Identifier number (optional)" hint="Use a made-up value, never a real ID number."><input name="identifierValue" maxLength={40} defaultValue={sp.identifierValue} className={inputCls} /></Label>
           <div className="md:col-span-2"><Button>{review ? 'Confirm this is a different person and create record' : 'Check for existing records and create'}</Button></div>
         </form>
       </Card>

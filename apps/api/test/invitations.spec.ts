@@ -3,7 +3,7 @@ import request from 'supertest';
 import { startApp } from './harness';
 
 let h: Awaited<ReturnType<typeof startApp>>;
-const ADMIN = 'admin@nexcust.demo', NATIONAL = 'police.national@nexcust.demo';
+const ADMIN = 'admin@nexcust.fourthit.com', NATIONAL = 'police.national@nexcust.fourthit.com';
 const uniq = () => `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
 const tokenOf = (link: string) => link.split('#token=')[1];
 const PASSWORD = 'correct horse battery staple';

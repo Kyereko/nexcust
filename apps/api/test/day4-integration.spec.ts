@@ -3,8 +3,8 @@ import request from 'supertest';
 import { startApp } from './harness';
 
 let h: Awaited<ReturnType<typeof startApp>>;
-const APPLICANT = 'applicant@nexcust.demo', BGC = 'police.bgcheck@nexcust.demo', APPROVER = 'police.national@nexcust.demo';
-const POLICE_REC = 'police.records@nexcust.demo', PRISON_REC = 'prisons.records@nexcust.demo';
+const APPLICANT = 'applicant@nexcust.fourthit.com', BGC = 'police.bgcheck@nexcust.fourthit.com', APPROVER = 'police.national@nexcust.fourthit.com';
+const POLICE_REC = 'police.records@nexcust.fourthit.com', PRISON_REC = 'prisons.records@nexcust.fourthit.com';
 const uniq = () => `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
 
 beforeAll(async () => { h = await startApp(); });
@@ -16,13 +16,13 @@ async function application(personWithConviction: boolean) {
   const p = personWithConviction ? conv.person : clean;
   const card = p.identifiers.find((i) => i.type === 'GHANA_CARD');
   return { person: p, body: { fullName: `${p.otherNames} ${p.surname}`, dateOfBirth: p.dateOfBirth!.toISOString().slice(0, 10), identifierType: 'GHANA_CARD',
-    identifierValue: `${card?.value ?? 'DEMO-GHA-X'}-${uniq()}`, purpose: 'Employment (test)', serviceTypeCode: 'ORDINARY_RESIDENT', residenceAttested: true, deliveryPostOffice: 'DEMO Accra Central Post Office' } };
+    identifierValue: `${card?.value ?? 'GHA-NXX'}-${uniq()}`, purpose: 'Employment (test)', serviceTypeCode: 'ORDINARY_RESIDENT', residenceAttested: true, deliveryPostOffice: 'Accra Central Post Office' } };
 }
-const appointment = { appointmentAt: new Date(Date.now() + 86400_000).toISOString(), captureCentre: 'DEMO CID Headquarters capture centre' };
+const appointment = { appointmentAt: new Date(Date.now() + 86400_000).toISOString(), captureCentre: 'CID Headquarters capture centre' };
 /** Officer steps up to the records search; returns after RECORDS_SEARCHED. */
 async function processTo(id: string, personId: string | undefined, ident: 'IDENT' | 'NOT_IDENT' | 'NOT_RECORDED') {
   const o = await h.as(BGC); const step = (body: object) => o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Step recorded (test)', ...body }).expect(201);
-  await step({ paymentRef: `DEMO-PAY-${uniq()}` });
+  await step({ paymentRef: `NX-PAY-${uniq()}` });
   await step(appointment);
   await step({ personId });
   return (await step({ criminalIdent: ident })).body;
@@ -44,11 +44,11 @@ describe('Workflow C — police clearance on the eServices portal flow', () => {
   it('officer records payment, appointment and attendance (fingerprints), then the criminal-ident result', async () => {
     const o = await h.as(BGC);
     await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'no ref' }).expect(400); // payment reference required
-    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Paid on Ghana.gov (test)', paymentRef: 'DEMO-PAY-1' }).expect(201);
+    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Paid on Ghana.gov (test)', paymentRef: 'NX-PAY-1' }).expect(201);
     await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Booked', ...appointment }).expect(201);
     const detail = (await o.get(`/api/police/background-checks/${appId}`).expect(200)).body;
     expect(detail.nextStage).toBe('BIOMETRICS_CAPTURED');
-    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Attended; live-scan prints taken (demo)', personId: detail.candidates[0]?.id }).expect(201);
+    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Attended; live-scan prints taken ', personId: detail.candidates[0]?.id }).expect(201);
     await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Search done' }).expect(400); // ident result required
     const searched = (await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'CDSB search done', criminalIdent: 'NOT_IDENT' }).expect(201)).body;
     expect(searched).toMatchObject({ status: 'RECORDS_SEARCHED', criminalIdent: 'NOT_IDENT' });
@@ -67,10 +67,10 @@ describe('Workflow C — police clearance on the eServices portal flow', () => {
     expect(mine.status).toBe('CERTIFICATE_ISSUED'); expect(JSON.stringify(mine)).not.toMatch(/findings|reviews|personId|criminalIdent/);
   });
   it('dispatches via Ghana Post; anyone with the code can verify authenticity', async () => {
-    await (await h.as(BGC)).post(`/api/police/background-checks/${appId}/dispatch`).send({ deliveryPostOffice: 'DEMO Accra Central Post Office', parcelBatchNo: 'DEMO-BATCH-001' }).expect(201);
-    expect((await (await h.as(APPLICANT)).get(`/api/applicant/background-checks/${appId}`).expect(200)).body).toMatchObject({ status: 'DISPATCHED', parcelBatchNo: 'DEMO-BATCH-001' });
+    await (await h.as(BGC)).post(`/api/police/background-checks/${appId}/dispatch`).send({ deliveryPostOffice: 'Accra Central Post Office', parcelBatchNo: 'NX-BATCH-001' }).expect(201);
+    expect((await (await h.as(APPLICANT)).get(`/api/applicant/background-checks/${appId}`).expect(200)).body).toMatchObject({ status: 'DISPATCHED', parcelBatchNo: 'NX-BATCH-001' });
     const pub = request(h.app.getHttpServer());
-    expect((await pub.get(`/api/verify/${code.toLowerCase().replace(/-/g, '')}`).expect(200)).body).toMatchObject({ valid: true, signsFor: 'Director-General, CID', demonstration: true });
+    expect((await pub.get(`/api/verify/${code.toLowerCase().replace(/-/g, '')}`).expect(200)).body).toMatchObject({ valid: true, signsFor: 'Director-General, CID', specimen: true });
     expect((await pub.get('/api/verify/AAAA-BBBB-CCCC').expect(200)).body.valid).toBe(false);
     await pub.get('/api/verify/short').expect(400);
   });
@@ -91,7 +91,7 @@ describe('Workflow C — police clearance on the eServices portal flow', () => {
     const { body } = await application(false);
     const id = (await (await h.as(APPLICANT)).post('/api/applicant/background-checks').send(body).expect(201)).body.id;
     const o = await h.as(BGC);
-    await o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Paid', paymentRef: 'DEMO-PAY-2' }).expect(201);
+    await o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Paid', paymentRef: 'NX-PAY-2' }).expect(201);
     await o.post(`/api/police/background-checks/${id}/request-info`).send({ note: 'Upload a clearer passport photo (test)' }).expect(201);
     expect((await (await h.as(APPLICANT)).get(`/api/applicant/background-checks/${id}`).expect(200)).body.status).toBe('ADDITIONAL_INFO_REQUESTED');
     await o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Information received' }).expect(201);
@@ -114,7 +114,7 @@ describe('authorized exchange between institutions', () => {
   it('a prison records officer obtains a minimal police custody summary; the request is logged with its purpose', async () => {
     const ep = await h.prisma.policeCustodyEpisode.findFirstOrThrow({ where: { status: 'REMANDED_TO_PRISON' } });
     const a = await h.as(PRISON_REC);
-    const r = (await a.post('/api/exchange/requests').send({ personId: ep.personId, providingInstitution: 'POLICE', purpose: 'Verify police remand before admission (test)', legalBasis: 'Remand warrant (demo)' }).expect(201)).body;
+    const r = (await a.post('/api/exchange/requests').send({ personId: ep.personId, providingInstitution: 'POLICE', purpose: 'Verify police remand before admission (test)', legalBasis: 'Remand warrant ' }).expect(201)).body;
     expect(r.disclosedSummary.kind).toBe('POLICE_CUSTODY_SUMMARY');
     expect(r.disclosedSummary.episodes.some((e: any) => e.status === 'REMANDED_TO_PRISON')).toBe(true);
     expect(JSON.stringify(r.disclosedSummary)).not.toMatch(/suspectedOffence|legalAuthority|dispositionNote|cell/i);
@@ -125,11 +125,11 @@ describe('authorized exchange between institutions', () => {
   it('police can ask prisons; nobody can "exchange" with their own institution; purpose is mandatory', async () => {
     const held = await h.prisma.prisonCustodyEpisode.findFirstOrThrow({ where: { status: 'IN_CUSTODY' }, include: { prisonerRecord: true } });
     const p = await h.as(POLICE_REC);
-    const r = (await p.post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'PRISONS', purpose: 'Locate suspect for investigation (test)', legalBasis: 'Active case (demo)' }).expect(201)).body;
+    const r = (await p.post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'PRISONS', purpose: 'Locate suspect for investigation (test)', legalBasis: 'Active case ' }).expect(201)).body;
     expect(r.disclosedSummary.currentlyInPrisonCustody).toBe(true); expect(JSON.stringify(r.disclosedSummary)).not.toMatch(/sentence|offence/i);
     await p.post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'POLICE', purpose: 'Own institution request', legalBasis: 'n/a basis' }).expect(400);
     await p.post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'PRISONS', purpose: '', legalBasis: '' }).expect(400);
-    await (await h.as('police.hr@nexcust.demo')).post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'PRISONS', purpose: 'HR is not entitled to ask', legalBasis: 'none given' }).expect(403);
+    await (await h.as('police.hr@nexcust.fourthit.com')).post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'PRISONS', purpose: 'HR is not entitled to ask', legalBasis: 'none given' }).expect(403);
   });
 });
 
@@ -142,13 +142,14 @@ describe('reports', () => {
     expect(r.total.personnel + r.personnelOutsideCommands).toBe((await (await h.as(APPROVER)).get('/api/police/dashboard').expect(200)).body.personnel);
   });
   it('regional and station users get only their own roll-up', async () => {
-    expect((await (await h.as('police.regional@nexcust.demo')).get('/api/police/reports').expect(200)).body.rows.map((x: any) => x.name)).toEqual(['Accra Regional Police Command']);
-    expect((await (await h.as('police.station@nexcust.demo')).get('/api/police/reports').expect(200)).body.rows.map((x: any) => x.name)).toEqual(['DEMO Accra Station 1']);
+    expect((await (await h.as('police.regional@nexcust.fourthit.com')).get('/api/police/reports').expect(200)).body.rows.map((x: any) => x.name)).toEqual(['Accra Regional Police Command']);
+    expect((await (await h.as('police.station@nexcust.fourthit.com')).get('/api/police/reports').expect(200)).body.rows.map((x: any) => x.name)).toEqual(['Nima Police Station']);
   });
   it('prisons national report totals equal the dashboard population', async () => {
-    const a = await h.as('prisons.national@nexcust.demo');
+    const a = await h.as('prisons.national@nexcust.fourthit.com');
     const [rep, dash] = await Promise.all([a.get('/api/prisons/reports').expect(200), a.get('/api/prisons/dashboard').expect(200)]);
-    expect(rep.body.total.population).toBe(dash.body.population); expect(rep.body.rows).toHaveLength(3);
+    expect(rep.body.total.population).toBe(dash.body.population);
+    expect(rep.body.rows).toHaveLength(await h.prisma.organizationalUnit.count({ where: { institution: { code: 'PRISONS' }, type: { code: 'REGIONAL_COMMAND' } } }));
     await (await h.as(POLICE_REC)).get('/api/prisons/reports').expect(403);
   });
 });

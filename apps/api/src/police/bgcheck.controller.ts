@@ -26,7 +26,7 @@ const next = (a: { status: string; criminalIdent: string | null }) => a.status =
 const validityMonths = () => Number(process.env.CERTIFICATE_VALIDITY_MONTHS ?? 6);
 const CLEAN_WORDING = () => process.env.CLEARANCE_CLEAN_WORDING ?? 'does not appear in the criminal records of the Ghana Police Service';
 const addMonths = (d: Date, m: number) => { const r = new Date(d); r.setUTCMonth(r.getUTCMonth() + m); return r; };
-/** Unambiguous verification code (no 0/O/1/I), 12 characters. A NEXCUST demonstration feature — the GPS portal has no public check. */
+/** Unambiguous verification code (no 0/O/1/I), 12 characters. A NEXCUST feature — the GPS portal has no public check. */
 const verificationCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const b = randomBytes(12); return Array.from(b, (x) => a[x % a.length]).join('').replace(/(.{4})(?!$)/g, '$1-'); };
 const IDENT = ['IDENT', 'NOT_IDENT', 'NOT_RECORDED'] as const;
 

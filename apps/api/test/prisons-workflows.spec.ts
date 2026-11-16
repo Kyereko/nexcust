@@ -2,22 +2,22 @@
 import { startApp } from './harness';
 
 let h: Awaited<ReturnType<typeof startApp>>;
-const RECORDS = 'prisons.records@nexcust.demo', NORTH = 'prisons.records.north@nexcust.demo', OIC = 'prisons.superintendent@nexcust.demo';
-const NATIONAL = 'prisons.national@nexcust.demo', HR = 'prisons.hr@nexcust.demo', POLICE = 'police.records@nexcust.demo';
+const RECORDS = 'prisons.records@nexcust.fourthit.com', NORTH = 'prisons.records.north@nexcust.fourthit.com', OIC = 'prisons.superintendent@nexcust.fourthit.com';
+const NATIONAL = 'prisons.national@nexcust.fourthit.com', HR = 'prisons.hr@nexcust.fourthit.com', POLICE = 'police.records@nexcust.fourthit.com';
 const uniq = () => `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
 let ashanti: string, north: string, housing: string;
 
 beforeAll(async () => {
   h = await startApp();
-  const a = await h.prisma.facility.findFirstOrThrow({ where: { name: 'DEMO Ashanti Central Prison' }, include: { housingUnits: true } });
+  const a = await h.prisma.facility.findFirstOrThrow({ where: { name: 'Kumasi Central Prison' }, include: { housingUnits: true } });
   ashanti = a.id; housing = a.housingUnits[0].id;
-  north = (await h.prisma.facility.findFirstOrThrow({ where: { name: 'DEMO Northern Central Prison' } })).id;
+  north = (await h.prisma.facility.findFirstOrThrow({ where: { name: 'Tamale Central Prison' } })).id;
 });
 afterAll(async () => { await h.app.close(); });
 
 const newPerson = async () => (await (await h.as(RECORDS)).post('/api/persons').send({ surname: `Inmate${uniq()}`, otherNames: 'Yaw Demo', sex: 'MALE' }).expect(201)).body.id as string;
-const remand = (personId: string, over: object = {}) => ({ personId, facilityId: ashanti, housingUnitId: housing, warrantType: 'REMAND_COMMITMENT_FOR_TRIAL', court: 'DEMO Circuit Court A', warrantRef: `DEMO-WRT-T${uniq()}`, warrantIssuedAt: new Date().toISOString().slice(0, 10),
-  returnDate: new Date(Date.now() + 10 * 86400_000).toISOString().slice(0, 10), escortingOfficer: 'DEMO Sgt. Escort (test)', conditionAtHandover: 'Sober, no visible injuries', ...over });
+const remand = (personId: string, over: object = {}) => ({ personId, facilityId: ashanti, housingUnitId: housing, warrantType: 'REMAND_COMMITMENT_FOR_TRIAL', court: 'Circuit Court, Accra', warrantRef: `NX-WRT-T${uniq()}`, warrantIssuedAt: new Date().toISOString().slice(0, 10),
+  returnDate: new Date(Date.now() + 10 * 86400_000).toISOString().slice(0, 10), escortingOfficer: 'Sgt. Escort (test)', conditionAtHandover: 'Sober, no visible injuries', ...over });
 
 describe('Workflow D — admission', () => {
   let personId: string, episodeId: string;
@@ -27,11 +27,11 @@ describe('Workflow D — admission', () => {
     const a = await h.as(RECORDS);
     const res = (await a.post('/api/prisons/admissions').send(remand(personId)).expect(201)).body;
     episodeId = res.episode.id;
-    expect(res.prisonerRecord.prisonerNumber).toMatch(/^DEMO-PN-/); expect(res.episode).toMatchObject({ status: 'IN_CUSTODY', classification: 'REMAND' });
+    expect(res.prisonerRecord.prisonerNumber).toMatch(/^NX-PN-/); expect(res.episode).toMatchObject({ status: 'IN_CUSTODY', classification: 'REMAND' });
     const list = (await a.get(`/api/prisons/prisoners?q=${res.prisonerRecord.prisonerNumber}`).expect(200)).body;
     expect(list.items.map((i: any) => i.id)).toContain(episodeId);
     const detail = (await a.get(`/api/prisons/prisoners/${episodeId}`).expect(200)).body;
-    expect(detail.admission.courtOrder).toMatchObject({ type: 'REMAND_COMMITMENT_FOR_TRIAL', formNumber: 'Form 14' }); expect(detail.admission.escortingOfficer).toBe('DEMO Sgt. Escort (test)'); expect(detail.admission.courtOrder.verifiedById).not.toBeNull();
+    expect(detail.admission.courtOrder).toMatchObject({ type: 'REMAND_COMMITMENT_FOR_TRIAL', formNumber: 'Form 14' }); expect(detail.admission.escortingOfficer).toBe('Sgt. Escort (test)'); expect(detail.admission.courtOrder.verifiedById).not.toBeNull();
   });
   it('refuses a second admission while the person is held', async () => {
     await (await h.as(RECORDS)).post('/api/prisons/admissions').send(remand(personId)).expect(409);
@@ -55,7 +55,7 @@ describe('Workflow D — admission', () => {
   it('enrolls the prisoner in a programme offered at their establishment only', async () => {
     const a = await h.as(RECORDS);
     // a dedicated programme per run, so the test does not depend on earlier runs' enrollments
-    const own = await h.prisma.rehabilitationProgramme.create({ data: { facilityId: ashanti, name: `DEMO Test programme ${uniq()}`, category: 'VOCATIONAL', capacity: 1 } });
+    const own = await h.prisma.rehabilitationProgramme.create({ data: { facilityId: ashanti, name: `Test programme ${uniq()}`, category: 'VOCATIONAL', capacity: 1 } });
     const other = await h.prisma.rehabilitationProgramme.findFirstOrThrow({ where: { facilityId: north } });
     await a.post('/api/prisons/rehabilitation/enrollments').send({ episodeId, programmeId: other.id }).expect(400);
     await a.post('/api/prisons/rehabilitation/enrollments').send({ episodeId, programmeId: own.id }).expect(201);
@@ -99,7 +99,7 @@ describe('Workflow E — transfer then release', () => {
   it('release needs a legal authority and a second officer; completion closes the custody episode', async () => {
     const n = await h.as(NORTH);
     await n.post('/api/prisons/releases').send({ episodeId, type: 'RELEASE_ON_BAIL_ORDER', legalAuthority: '' }).expect(400);
-    releaseId = (await n.post('/api/prisons/releases').send({ episodeId, type: 'RELEASE_ON_BAIL_ORDER', legalAuthority: 'Bail granted by DEMO Circuit Court A (test)' }).expect(201)).body.id;
+    releaseId = (await n.post('/api/prisons/releases').send({ episodeId, type: 'RELEASE_ON_BAIL_ORDER', legalAuthority: 'Bail granted by Circuit Court, Accra (test)' }).expect(201)).body.id;
     await n.post(`/api/prisons/releases/${releaseId}/approve`).expect(403); // records officer cannot authorize
     await (await h.as(OIC)).post(`/api/prisons/releases/${releaseId}/approve`).expect(403); // another establishment's officer-in-charge
     expect((await h.prisma.prisonCustodyEpisode.findUniqueOrThrow({ where: { id: episodeId } })).status).toBe('IN_CUSTODY');
@@ -128,7 +128,7 @@ describe('remand warrants and remission (flag, never auto-release)', () => {
     let att = (await a.get('/api/prisons/remand-warrants/attention').expect(200)).body;
     expect(att.rows.find((r: any) => r.episodeId === ep.id)).toMatchObject({ state: 'EXPIRED' });
     expect((await h.prisma.prisonCustodyEpisode.findUniqueOrThrow({ where: { id: ep.id } })).status).toBe('IN_CUSTODY'); // still held
-    await a.post(`/api/prisons/prisoners/${ep.id}/remand-renewals`).send({ court: 'DEMO Circuit Court A', warrantRef: `DEMO-WRT-R${uniq()}`, issuedAt: past(1),
+    await a.post(`/api/prisons/prisoners/${ep.id}/remand-renewals`).send({ court: 'Circuit Court, Accra', warrantRef: `NX-WRT-R${uniq()}`, issuedAt: past(1),
       returnDate: new Date(Date.now() + 12 * 86400_000).toISOString().slice(0, 10) }).expect(201);
     att = (await a.get('/api/prisons/remand-warrants/attention').expect(200)).body;
     expect(att.rows.find((r: any) => r.episodeId === ep.id)).toBeUndefined();
@@ -149,8 +149,8 @@ describe('remand warrants and remission (flag, never auto-release)', () => {
 
 describe('prison officer posting', () => {
   it('HR proposes, national approves, receiving officer-in-charge confirms; history preserved', async () => {
-    const to = (await h.prisma.organizationalUnit.findFirstOrThrow({ where: { name: 'DEMO Ashanti Central Prison' } })).id;
-    const officer = await h.prisma.prisonPersonnel.findFirstOrThrow({ where: { currentOrgUnit: { name: { startsWith: 'DEMO Western' } }, postings: { none: { status: { in: ['PROPOSED', 'APPROVED'] } } } } });
+    const to = (await h.prisma.organizationalUnit.findFirstOrThrow({ where: { name: 'Kumasi Central Prison' } })).id;
+    const officer = await h.prisma.prisonPersonnel.findFirstOrThrow({ where: { currentOrgUnit: { name: 'Sekondi Central Prison' }, postings: { none: { status: { in: ['PROPOSED', 'APPROVED'] } } } } });
     const hr = await h.as(HR);
     const id = (await hr.post('/api/prisons/postings').send({ personnelId: officer.id, toOrgUnitId: to, reason: 'Service requirement (test)' }).expect(201)).body.id;
     await hr.post(`/api/prisons/postings/${id}/approve`).expect(403);

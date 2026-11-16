@@ -61,7 +61,7 @@ export class ApplicantController {
     if (!service || !service.available) throw new BadRequestException('Choose a clearance service that is currently available');
     if (!dto.residenceAttested) throw new BadRequestException('Applicants must meet the residence rule (resident in Ghana for over 3 months after more than 6 months abroad)');
     const dob = new Date(dto.dateOfBirth);
-    if (dob.getTime() > Date.now() - 16 * 365.25 * 86400_000) throw new BadRequestException('Applicant must be at least 16 years old (demonstration rule)');
+    if (dob.getTime() > Date.now() - 16 * 365.25 * 86400_000) throw new BadRequestException('Applicant must be at least 16 years old');
     if (await this.prisma.backgroundCheckApplication.count({ where: { applicantUserId: req.auth!.user.id, identifierValue: dto.identifierValue.trim(), status: { in: [...ACTIVE] } } }))
       throw new ConflictException('You already have an application in progress for this identity document');
     const a = await this.prisma.backgroundCheckApplication.create({ data: { reference: await nextRef(this.prisma, 'bgcheck', 'BGC'), applicantUserId: req.auth!.user.id,
@@ -93,7 +93,7 @@ export class VerifyController {
     const expired = !!c.expiresAt && c.expiresAt < new Date();
     const status = c.status === 'VALID' && expired ? 'EXPIRED' : c.status;
     return { valid: status === 'VALID', status, certificateNumber: c.certificateNumber, holderName: c.application.fullName, dateOfBirth: c.application.dateOfBirth,
-      purpose: c.application.purpose, resultSummary: c.resultSummary, issuedAt: c.issuedAt, expiresAt: c.expiresAt, signatoryTitle: c.signatoryTitle, signsFor: c.signsFor, demonstration: true };
+      purpose: c.application.purpose, resultSummary: c.resultSummary, issuedAt: c.issuedAt, expiresAt: c.expiresAt, signatoryTitle: c.signatoryTitle, signsFor: c.signsFor, specimen: true };
   }
 }
 

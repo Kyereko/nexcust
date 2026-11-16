@@ -98,8 +98,6 @@ export const POLICE_REGIONAL_COMMANDS = ['Accra', 'Tema', 'Ashanti', 'Ashanti No
   'Central East', 'Central North', 'Eastern', 'Eastern North', 'Eastern South', 'North East', 'Northern', 'Oti', 'Savannah', 'Upper East',
   'Upper West', 'Volta', 'Volta North', 'Western', 'Western North', 'Western Central'];
 
-/** Prisons regional commands used for the demo tree (subset seen on ghanaprisons.gov.gh). */
-export const PRISON_REGIONAL_COMMANDS_DEMO = ['Ashanti', 'Northern', 'Western'];
 
 /**
  * Police clearance service catalogue as published on eservices.police.gov.gh (read 16 Nov 2026, docs/research/10 C-01/C-02).
@@ -118,4 +116,4 @@ export const CLEARANCE_SERVICE_TYPES: Array<{ code: string; name: string; vettin
 ];
 export const CLEARANCE_SOURCE = 'eservices.police.gov.gh (public portal, read 16 Nov 2026)';
 /** Demo signatory. Title PROVISIONAL (press, Apr 2026); "for: Director-General, CID" to be confirmed with CID. */
-export const CLEARANCE_SIGNATORY = { email: 'police.national@nexcust.demo', signatoryTitle: 'Director in charge of Administration, CID (demonstration)', signsFor: 'Director-General, CID' };
+export const CLEARANCE_SIGNATORY = { email: 'police.national@nexcust.fourthit.com', signatoryTitle: 'Director in charge of Administration, CID', signsFor: 'Director-General, CID' };
