@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { api, fmtDate, fmtDateTime, getSession } from '@/lib/api';
 import { Badge, Card, Field, Flash, LinkButton, PageHeader, Table } from '@/components/ui';
+import { ExchangePanel } from '@/components/exchange-panel';
 
 export default async function PersonRecord({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
   const { id } = await params; const sp = await searchParams; const user = (await getSession())!;
@@ -16,6 +17,8 @@ export default async function PersonRecord({ params, searchParams }: { params: P
         <Field label="Sex">{p.sex}</Field><Field label="Date of birth">{fmtDate(p.dateOfBirth)}</Field><Field label="Hometown">{p.hometown ?? '—'}</Field>
         <Field label="Identifiers">{p.identifiers.length ? p.identifiers.map((i: any) => <div key={i.value}>{i.type.replace(/_/g, ' ')}: {i.value}{i.verified ? ' ✓' : ' (unverified)'}</div>) : 'None recorded'}</Field>
       </dl></Card>
+      {user.permissions.includes('exchange.request') && <div className="mt-4"><ExchangePanel personId={p.id} provider="PRISONS" returnTo={`/police/people/${p.id}`} exchangeId={sp.exchange}
+        defaultPurpose="Establish whether the person is held in prison custody" defaultBasis="Active police matter" /></div>}
       <h2 className="mb-2 mt-6 font-semibold">Convictions recorded from court documents</h2>
       <Table head={['Convicted', 'Offence', 'Court', 'Court ref.', 'Sentence']}>
         {r.convictions.map((c: any) => <tr key={c.id}><td className="whitespace-nowrap">{fmtDate(c.convictedAt)}</td><td>{c.offence}</td><td>{c.court}</td><td>{c.courtCaseRef ?? '—'}</td><td>{c.sentenceSummary ?? '—'}</td></tr>)}

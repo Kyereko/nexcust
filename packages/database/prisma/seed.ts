@@ -40,7 +40,11 @@ function name() {
 }
 
 async function main() {
-  if (await prisma.institution.count()) { console.log('Database already seeded — skipping (use `pnpm db:reset` to rebuild).'); return; }
+  if (await prisma.institution.count()) {
+    await syncRbac();
+    console.log('Database already seeded — roles and permissions synchronised with @justiceone/contracts (use `pnpm db:reset` to rebuild data).');
+    return;
+  }
   console.log('Seeding JusticeOne DEMONSTRATION data…');
   // ── institutions & reference data ──
   const inst = {
@@ -234,5 +238,19 @@ async function main() {
   console.log(`Demo accounts (password: ${DEMO_PASSWORD}):`); demoUsers.forEach(([e, , r]) => console.log(`  ${e.padEnd(40)} ${r}`));
 }
 const ranksData: Prisma.RankCreateManyInput[] = [];
+
+/** Bring permissions and role→permission mappings in line with the contracts package (idempotent). */
+async function syncRbac() {
+  for (const [code, description] of Object.entries(PERMISSIONS)) await prisma.permission.upsert({ where: { code }, update: { description }, create: { code, description } });
+  const perms = new Map((await prisma.permission.findMany()).map((p) => [p.code, p.id]));
+  for (const r of ROLES) {
+    const role = await prisma.role.findUnique({ where: { code: r.code } });
+    if (!role) continue;
+    await prisma.$transaction([
+      prisma.rolePermission.deleteMany({ where: { roleId: role.id } }),
+      prisma.rolePermission.createMany({ data: r.permissions.map((p) => ({ roleId: role.id, permissionId: perms.get(p)! })) }),
+    ]);
+  }
+}
 
 main().catch((e) => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());

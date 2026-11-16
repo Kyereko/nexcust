@@ -86,19 +86,22 @@ const PRISONS_READ: Permission[] = [
  *  - PLATFORM_ADMIN manages accounts/config but has NO access to operational records.
  *  - Records officers initiate; commanders/superintendents approve (maker–checker).
  *  - AUDITOR is strictly read-only.
+ *  - Background checks: the Background Check Officer searches and reviews; issuance is approved by a
+ *    different officer holding police.bgcheck.approve (demo: Police National Administrator).
+ *  - exchange.request lets records officers ask the OTHER institution for a minimal, purpose-bound summary.
  */
 export const ROLES: RoleDefinition[] = [
   { code: 'PLATFORM_ADMIN', name: 'Platform Administrator', institution: null, scopeLevel: 'PLATFORM', workspace: 'admin',
     permissions: ['platform.users.manage', 'platform.config.manage', 'audit.read'] },
   { code: 'POLICE_NATIONAL_ADMIN', name: 'Police National Administrator', institution: 'POLICE', scopeLevel: 'ORG_UNIT', typicalScope: 'National HQ', workspace: 'police',
-    permissions: [...POLICE_READ, 'police.bgcheck.read', 'police.posting.approve', 'police.custody.close', 'audit.read', 'exchange.request'] },
+    permissions: [...POLICE_READ, 'police.bgcheck.read', 'police.bgcheck.approve', 'police.posting.approve', 'police.custody.close', 'audit.read', 'exchange.request'] },
   { code: 'POLICE_REGIONAL_COMMANDER', name: 'Police Regional Commander', institution: 'POLICE', scopeLevel: 'ORG_UNIT', typicalScope: 'Regional command', workspace: 'police',
     permissions: [...POLICE_READ, 'police.posting.approve', 'police.custody.close'] },
   { code: 'POLICE_STATION_COMMANDER', name: 'Police Station Commander', institution: 'POLICE', scopeLevel: 'ORG_UNIT', typicalScope: 'Station / establishment', workspace: 'police',
     permissions: [...POLICE_READ, 'police.custody.close', 'police.posting.approve'] },
   { code: 'POLICE_RECORDS_OFFICER', name: 'Police Records Officer', institution: 'POLICE', scopeLevel: 'ORG_UNIT', typicalScope: 'Station / establishment', workspace: 'police',
     permissions: ['police.dashboard.read', 'police.custody.read', 'police.custody.write', 'police.case.read', 'police.case.write',
-      'police.facility.read', 'person.read', 'person.write'] },
+      'police.facility.read', 'person.read', 'person.write', 'exchange.request'] },
   { code: 'POLICE_HR_OFFICER', name: 'Police HR Officer', institution: 'POLICE', scopeLevel: 'ORG_UNIT', typicalScope: 'National HQ', workspace: 'police',
     permissions: ['police.dashboard.read', 'police.personnel.read', 'police.personnel.write', 'police.facility.read'] },
   { code: 'BACKGROUND_CHECK_OFFICER', name: 'Background Check Officer', institution: 'POLICE', scopeLevel: 'ORG_UNIT', typicalScope: 'National HQ', workspace: 'police',
@@ -109,7 +112,7 @@ export const ROLES: RoleDefinition[] = [
     permissions: [...PRISONS_READ, 'prisons.transfer.approve', 'prisons.release.approve', 'prisons.posting.approve'] },
   { code: 'PRISON_RECORDS_OFFICER', name: 'Prison Records Officer', institution: 'PRISONS', scopeLevel: 'ORG_UNIT', typicalScope: 'Station / establishment', workspace: 'prisons',
     permissions: ['prisons.dashboard.read', 'prisons.prisoner.read', 'prisons.prisoner.write', 'prisons.transfer.initiate',
-      'prisons.release.initiate', 'prisons.facility.read', 'prisons.rehab.read', 'prisons.rehab.write', 'person.read', 'person.write'] },
+      'prisons.release.initiate', 'prisons.facility.read', 'prisons.rehab.read', 'prisons.rehab.write', 'person.read', 'person.write', 'exchange.request'] },
   { code: 'PRISON_HR_OFFICER', name: 'Prison HR Officer', institution: 'PRISONS', scopeLevel: 'ORG_UNIT', typicalScope: 'National HQ', workspace: 'prisons',
     permissions: ['prisons.dashboard.read', 'prisons.personnel.read', 'prisons.personnel.write', 'prisons.facility.read'] },
   { code: 'AUDITOR', name: 'Auditor', institution: null, scopeLevel: 'PLATFORM', workspace: 'audit',

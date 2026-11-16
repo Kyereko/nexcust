@@ -7,6 +7,7 @@ import { AccessScope, AuthedRequest, inScope, unitWhere } from '../common/access
 import { ListQuery, page, paging } from '../common/pagination';
 import { PrisonCustodyController } from './custody.controller';
 import { PrisonPostingsController } from './postings.controller';
+import { lastMonths, monthStart, rollupBuckets, sumBy, tally } from '../common/reports';
 
 const PRISONS = { institution: { code: 'PRISONS' as const } };
 const facilityScope = (scope: AccessScope) => ({ facility: { ...PRISONS, orgUnit: unitWhere(scope) } });
@@ -42,6 +43,38 @@ export class PrisonsController {
     return rows.map((f) => ({ id: f.id, code: f.code, name: f.name, type: f.facilityType.name, regionalCommand: f.orgUnit.parent?.name ?? null, capacity: f.capacity,
       functions: f.functions, housingUnits: f.housingUnits, operationalStatus: f.operationalStatus, isSynthetic: f.isSynthetic, population: f._count.prisonCustody,
       occupancyRate: f.capacity ? Math.round((f._count.prisonCustody / f.capacity) * 100) : null }));
+  }
+
+  /** Roll-up by regional command (or own establishment) plus six-month admissions and releases. Aggregates only. */
+  @Get('reports')
+  @RequirePermission('prisons.dashboard.read')
+  async reports(@Req() req: AuthedRequest) {
+    const buckets = await rollupBuckets(this.prisma, req.scope!, 'PRISONS');
+    const ids = buckets.flatMap((b) => b.facilityIds); const d30 = new Date(Date.now() - 30 * 86400_000); const months = lastMonths(6);
+    const [held, remand, convicted, adm30, rel30, trIn30, trOut30, caps, admissions, releases] = await Promise.all([
+      this.prisma.prisonCustodyEpisode.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, status: HELD }, _count: { _all: true } }),
+      this.prisma.prisonCustodyEpisode.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, status: HELD, classification: 'REMAND' }, _count: { _all: true } }),
+      this.prisma.prisonCustodyEpisode.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, status: HELD, classification: 'CONVICTED' }, _count: { _all: true } }),
+      this.prisma.prisonAdmission.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, admittedAt: { gte: d30 } }, _count: { _all: true } }),
+      this.prisma.prisonRelease.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, status: 'COMPLETED', releasedAt: { gte: d30 } }, _count: { _all: true } }),
+      this.prisma.prisonTransfer.groupBy({ by: ['toFacilityId'], where: { toFacilityId: { in: ids }, status: 'RECEIVED', receivedAt: { gte: d30 } }, _count: { _all: true } }),
+      this.prisma.prisonTransfer.groupBy({ by: ['fromFacilityId'], where: { fromFacilityId: { in: ids }, status: { in: ['IN_TRANSIT', 'RECEIVED'] }, dispatchedAt: { gte: d30 } }, _count: { _all: true } }),
+      this.prisma.facility.findMany({ where: { id: { in: ids } }, select: { id: true, capacity: true } }),
+      this.prisma.prisonAdmission.findMany({ where: { facilityId: { in: ids }, admittedAt: { gte: monthStart(months[0]) } }, select: { admittedAt: true } }),
+      this.prisma.prisonRelease.findMany({ where: { facilityId: { in: ids }, status: 'COMPLETED', releasedAt: { gte: monthStart(months[0]) } }, select: { releasedAt: true } }),
+    ]);
+    const asFac = (rows: any[], key: string) => rows.map((r) => ({ facilityId: r[key], _count: r._count }));
+    const rows = buckets.map((b) => {
+      const capacity = caps.filter((c) => b.facilityIds.includes(c.id)).reduce((n, c) => n + (c.capacity ?? 0), 0); const population = sumBy(held, b.facilityIds);
+      return { id: b.id, name: b.name, establishments: b.facilityIds.length, capacity, population, occupancyRate: capacity ? Math.round((population / capacity) * 100) : null,
+        remand: sumBy(remand, b.facilityIds), convicted: sumBy(convicted, b.facilityIds), admissions30d: sumBy(adm30, b.facilityIds), releases30d: sumBy(rel30, b.facilityIds),
+        transfersIn30d: sumBy(asFac(trIn30, 'toFacilityId'), b.facilityIds), transfersOut30d: sumBy(asFac(trOut30, 'fromFacilityId'), b.facilityIds) };
+    });
+    const keys = ['establishments', 'capacity', 'population', 'remand', 'convicted', 'admissions30d', 'releases30d', 'transfersIn30d', 'transfersOut30d'] as const;
+    const total: Record<string, number | null> = Object.fromEntries(keys.map((k) => [k, rows.reduce((n, r) => n + r[k], 0)]));
+    total.occupancyRate = total.capacity ? Math.round(((total.population as number) / (total.capacity as number)) * 100) : null;
+    return { generatedAt: new Date(), rows, total, byMonth: months.map((m, i) => ({ month: m, admissions: tally(admissions.map((a) => a.admittedAt), months)[i].count,
+      releases: tally(releases.map((r) => r.releasedAt!).filter(Boolean), months)[i].count })) };
   }
 
   @Get('facilities')

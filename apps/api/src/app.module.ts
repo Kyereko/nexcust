@@ -8,6 +8,8 @@ import { AccessGuard } from './auth/access.guard';
 import { SharedModule } from './shared/shared.module';
 import { PoliceModule } from './police/police.module';
 import { PrisonsModule } from './prisons/prisons.module';
+import { ApplicantModule } from './applicant/applicant.module';
+import { ExchangeModule } from './exchange/exchange.module';
 
 /**
  * Modular monolith. Police and Prisons modules never import each other;
@@ -17,7 +19,7 @@ import { PrisonsModule } from './prisons/prisons.module';
   imports: [
     // Per client IP (the web tier forwards the real client address). Sign-in has its own, much lower limit.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: Number(process.env.API_RATE_LIMIT ?? 600) }]),
-    PrismaModule, AuditModule, AuthModule, SharedModule, PoliceModule, PrisonsModule,
+    PrismaModule, AuditModule, AuthModule, SharedModule, PoliceModule, PrisonsModule, ApplicantModule, ExchangeModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

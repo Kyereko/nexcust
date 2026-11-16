@@ -3,6 +3,8 @@ import type { Paginated } from '@justiceone/contracts';
 import { api, fmtDate, qs } from '@/lib/api';
 import { Button, Card, Field, Flash, Label, LinkButton, PageHeader, SearchBar, Table, inputCls } from '@/components/ui';
 import { admit } from '../actions';
+import { getSession } from '@/lib/api';
+import { ExchangePanel } from '@/components/exchange-panel';
 
 export default async function Admissions({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
@@ -36,6 +38,8 @@ export default async function Admissions({ searchParams }: { searchParams: Promi
       <PageHeader title="Admit to custody" subtitle="Step 2 — verify the legal authority and record the admission" />
       <Flash sp={sp} />
       <Card className="mb-4 p-5"><dl className="grid grid-cols-2 gap-4 md:grid-cols-4"><Field label="Person">{p.surname}, {p.otherNames}</Field><Field label="Index no.">{p.indexNumber}</Field><Field label="Sex">{p.sex}</Field><Field label="Date of birth">{fmtDate(p.dateOfBirth)}</Field></dl></Card>
+      {(await getSession())!.permissions.includes('exchange.request') && <div className="mb-4"><ExchangePanel personId={p.id} provider="POLICE" returnTo={`/prisons/admissions?personId=${p.id}`} exchangeId={sp.exchange}
+        defaultPurpose="Verify police custody history before admission" defaultBasis="Warrant presented for admission" /></div>}
       <Card className="p-5">
         <form action={admit} className="grid gap-4 md:grid-cols-2">
           <input type="hidden" name="personId" value={p.id} />

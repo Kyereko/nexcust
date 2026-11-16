@@ -18,3 +18,12 @@ export async function createPerson(f: FormData) {
   if (r.code === 'POSSIBLE_DUPLICATES') redirect(back(formPath, { ...fields, review: '1' }));
   redirect(back(formPath, { ...fields, error: r.message }));
 }
+
+/** Authorized exchange: ask the OTHER institution for a minimal summary. Purpose and basis are mandatory and logged. */
+export async function requestExchange(f: FormData) {
+  const returnTo = s(f, 'returnTo') ?? '/';
+  const safe = returnTo.startsWith('/police/') || returnTo.startsWith('/prisons/') ? returnTo : '/';
+  const [path, query] = safe.split('?'); const params = Object.fromEntries(new URLSearchParams(query ?? ''));
+  const r = await send('POST', '/exchange/requests', { personId: s(f, 'personId'), providingInstitution: s(f, 'providingInstitution'), purpose: s(f, 'purpose'), legalBasis: s(f, 'legalBasis') });
+  redirect(back(path, { ...params, ...(r.ok ? { exchange: r.data.id } : { error: r.message }) }));
+}

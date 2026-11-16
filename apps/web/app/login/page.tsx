@@ -53,6 +53,7 @@ export default function LoginPage() {
             </select>
           </label>
           <p className="mt-2 text-xs text-slate-500">The shared demo password is provided in the setup guide (README).</p>
+          <p className="mt-3 text-xs"><a href="/verify" className="underline">Verify a certificate</a> — no sign-in needed</p>
         </div>
       </section>
     </main>

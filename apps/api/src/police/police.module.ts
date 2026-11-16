@@ -8,6 +8,8 @@ import { ListQuery, page, paging } from '../common/pagination';
 import { PoliceCustodyController } from './custody.controller';
 import { PoliceRecordsController } from './records.controller';
 import { PolicePostingsController } from './postings.controller';
+import { PoliceBackgroundCheckController } from './bgcheck.controller';
+import { lastMonths, monthStart, rollupBuckets, sumBy, tally } from '../common/reports';
 
 const POLICE = { institution: { code: 'POLICE' as const } };
 /** Facility-bound police records visible to the caller: police institution AND inside the caller's command subtree. */
@@ -39,6 +41,33 @@ export class PoliceController {
       scope: req.scope!.all ? 'ALL' : 'JURISDICTION', inCustody, pastDeadline, arrests30d, openCases, personnel, stations,
       custodyByStation: byStation.map((f) => ({ id: f.id, name: f.name, capacity: f.capacity, inCustody: f._count.policeCustody })),
     };
+  }
+
+  /** Roll-up by regional command (or the caller's own unit) plus a six-month arrest trend. Aggregates only. */
+  @Get('reports')
+  @RequirePermission('police.dashboard.read')
+  async reports(@Req() req: AuthedRequest) {
+    const buckets = await rollupBuckets(this.prisma, req.scope!, 'POLICE');
+    const ids = buckets.flatMap((b) => b.facilityIds); const now = new Date(); const d30 = new Date(now.getTime() - 30 * 86400_000);
+    const months = lastMonths(6);
+    const [inCustody, overdue, arrests30, openCases, closed30, personnel, units, trend] = await Promise.all([
+      this.prisma.policeCustodyEpisode.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, status: 'IN_CUSTODY' }, _count: { _all: true } }),
+      this.prisma.policeCustodyEpisode.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, status: 'IN_CUSTODY', courtDeadlineAt: { lt: now } }, _count: { _all: true } }),
+      this.prisma.arrest.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, arrestedAt: { gte: d30 }, voidedAt: null }, _count: { _all: true } }),
+      this.prisma.policeCase.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, status: { not: 'CLOSED' } }, _count: { _all: true } }),
+      this.prisma.policeCustodyEpisode.groupBy({ by: ['facilityId'], where: { facilityId: { in: ids }, closedAt: { gte: d30 } }, _count: { _all: true } }),
+      this.prisma.policePersonnel.findMany({ where: { status: 'ACTIVE', currentOrgUnit: unitWhere(req.scope!) }, select: { currentOrgUnit: { select: { path: true } } } }),
+      this.prisma.organizationalUnit.findMany({ where: { id: { in: buckets.map((b) => b.id) } }, select: { id: true, path: true } }),
+      this.prisma.arrest.findMany({ where: { facilityId: { in: ids }, voidedAt: null, arrestedAt: { gte: monthStart(months[0]) } }, select: { arrestedAt: true } }),
+    ]);
+    const pathOf = new Map(units.map((u) => [u.id, u.path]));
+    const rows = buckets.map((b) => ({ id: b.id, name: b.name, stations: b.facilityIds.length, inCustody: sumBy(inCustody, b.facilityIds), pastDeadline: sumBy(overdue, b.facilityIds),
+      arrests30d: sumBy(arrests30, b.facilityIds), custodyClosed30d: sumBy(closed30, b.facilityIds), openCases: sumBy(openCases, b.facilityIds),
+      personnel: personnel.filter((p) => p.currentOrgUnit.path.startsWith(pathOf.get(b.id) ?? '~')).length }));
+    const total = rows.reduce((t, r) => ({ stations: t.stations + r.stations, inCustody: t.inCustody + r.inCustody, pastDeadline: t.pastDeadline + r.pastDeadline, arrests30d: t.arrests30d + r.arrests30d,
+      custodyClosed30d: t.custodyClosed30d + r.custodyClosed30d, openCases: t.openCases + r.openCases, personnel: t.personnel + r.personnel }),
+      { stations: 0, inCustody: 0, pastDeadline: 0, arrests30d: 0, custodyClosed30d: 0, openCases: 0, personnel: 0 });
+    return { generatedAt: now, rows, total, arrestsByMonth: tally(trend.map((t) => t.arrestedAt), months) };
   }
 
   @Get('custody')
@@ -110,5 +139,5 @@ export class PoliceController {
   }
 }
 
-@Module({ controllers: [PoliceController, PoliceCustodyController, PoliceRecordsController, PolicePostingsController] })
+@Module({ controllers: [PoliceController, PoliceCustodyController, PoliceRecordsController, PolicePostingsController, PoliceBackgroundCheckController] })
 export class PoliceModule {}

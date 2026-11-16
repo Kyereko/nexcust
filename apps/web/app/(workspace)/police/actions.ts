@@ -47,3 +47,14 @@ export async function decidePosting(f: FormData) {
   const done = { approve: 'Posting approved. It now awaits confirmation by the receiving command.', confirm: 'Posting confirmed. The officer\'s current posting has been updated.', reject: 'Posting rejected.' }[decision!];
   redirect(back('/police/postings', r.ok ? { notice: done } : { error: r.message }));
 }
+
+export async function advanceBgCheck(f: FormData) {
+  const id = s(f, 'id')!; const stage = s(f, 'stage');
+  const r = await send('POST', `/police/background-checks/${id}/advance`, { stage, note: s(f, 'note'), ...(stage === 'IDENTITY_VERIFIED' ? { personId: s(f, 'personId') } : {}) });
+  redirect(back(`/police/background-checks/${id}`, r.ok ? { notice: `Recorded: ${stage?.replace(/_/g, ' ').toLowerCase()}.` } : { error: r.message }));
+}
+export async function decideBgCheck(f: FormData) {
+  const id = s(f, 'id')!; const decision = s(f, 'decision') === 'REJECT' ? 'REJECT' : 'APPROVE';
+  const r = await send('POST', `/police/background-checks/${id}/decision`, { decision, note: s(f, 'note') });
+  redirect(back(`/police/background-checks/${id}`, r.ok ? { notice: decision === 'APPROVE' ? `Certificate ${r.data.certificateNumber} issued.` : 'Application rejected.' } : { error: r.message }));
+}
