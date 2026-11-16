@@ -14,7 +14,7 @@ test('Workflows D and E — admit, transfer between establishments, then release
   const surname = `Edwee${Date.now()}`;
   // D: admission by the Ashanti records officer
   await signIn(page, 'prisons.records@nexcust.demo');
-  await page.getByRole('link', { name: 'Admissions & Custody', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'Admissions & Custody', exact: true }).click();
   await page.getByRole('link', { name: 'Register new person' }).click();
   await page.getByLabel('Surname').fill(surname);
   await page.getByLabel('Other names').fill('Kojo Demo');
@@ -28,7 +28,7 @@ test('Workflows D and E — admit, transfer between establishments, then release
   const prisonerUrl = page.url().split('?')[0];
 
   // registry is updated
-  await page.getByRole('link', { name: 'Prisoner Registry', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'Prisoner Registry', exact: true }).click();
   await page.getByLabel('Search').fill(surname);
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('cell', { name: new RegExp(surname) })).toBeVisible();
@@ -42,13 +42,13 @@ test('Workflows D and E — admit, transfer between establishments, then release
   await signOut(page);
 
   await signIn(page, 'prisons.superintendent@nexcust.demo');
-  await page.getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).getByRole('button', { name: 'Approve & dispatch' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'in transit' })).toBeVisible();
   await signOut(page);
 
   await signIn(page, 'prisons.records.north@nexcust.demo');
-  await page.getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).getByRole('button', { name: 'Confirm arrival' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Arrival confirmed' })).toBeVisible();
   await page.goto(prisonerUrl);
@@ -65,7 +65,7 @@ test('Workflows D and E — admit, transfer between establishments, then release
   await signOut(page);
 
   await signIn(page, 'prisons.national@nexcust.demo');
-  await page.getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).filter({ hasText: 'BAIL' }).getByRole('button', { name: 'Authorize release' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Release authorized' })).toBeVisible();
   await page.goto(prisonerUrl);

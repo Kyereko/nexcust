@@ -27,7 +27,7 @@ test('Workflow C — application, review, approval, sample certificate and publi
   await signOut(page);
 
   await signIn(page, 'police.bgcheck@nexcust.demo');
-  await page.getByRole('link', { name: 'Background Checks', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'Background Checks', exact: true }).click();
   await page.getByLabel('Search').fill(reference);
   await page.getByRole('button', { name: 'Search' }).click();
   await page.getByRole('link', { name: reference }).click();
@@ -67,7 +67,7 @@ test('Workflow C — application, review, approval, sample certificate and publi
 
 test('authorized exchange — police see whether a person is in prison custody, with purpose recorded', async ({ page }) => {
   await signIn(page, 'police.records@nexcust.demo');
-  await page.getByRole('link', { name: 'People & Records', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'People & Records', exact: true }).click();
   await page.getByLabel('Search').fill('DEMO-NPI-000302');
   await page.getByRole('button', { name: 'Search' }).click();
   await page.getByRole('link', { name: 'Police record' }).click();
@@ -77,13 +77,13 @@ test('authorized exchange — police see whether a person is in prison custody, 
 
 test('reports roll up by command and show the monthly trend', async ({ page }) => {
   await signIn(page, 'police.national@nexcust.demo');
-  await page.getByRole('link', { name: 'Reports & Analytics', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'Reports & Analytics', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'Accra Regional Police Command' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Total' })).toBeVisible();
   await expect(page.getByText('Arrests per month (last six months)')).toBeVisible();
   await signOut(page);
   await signIn(page, 'prisons.national@nexcust.demo');
-  await page.getByRole('link', { name: 'Reports & Analytics', exact: true }).click();
+  await page.locator('aside').getByRole('link', { name: 'Reports & Analytics', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'Ashanti Regional Prisons Command' })).toBeVisible();
   await expect(page.getByText('Admissions per month')).toBeVisible();
 });

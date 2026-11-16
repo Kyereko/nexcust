@@ -15,7 +15,7 @@ test('Workflow A — register a detainee, then the station commander authorizes 
   await signIn(page, 'police.records@nexcust.demo');
 
   // 1–3: search first, create an identity record only because none exists
-  await page.getByRole('link', { name: 'People & Records' }).click();
+  await page.locator('aside').getByRole('link', { name: 'People & Records', exact: true }).click();
   await page.getByLabel('Search').fill(surname);
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByText('No records found')).toBeVisible();
@@ -36,7 +36,7 @@ test('Workflow A — register a detainee, then the station commander authorizes 
   const custodyUrl = page.url().split('?')[0];
 
   // saved and searchable in the register
-  await page.getByRole('link', { name: 'Arrests & Custody' }).click();
+  await page.locator('aside').getByRole('link', { name: 'Arrests & Custody', exact: true }).click();
   await page.getByLabel('Search').fill(surname);
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('cell', { name: new RegExp(surname) })).toBeVisible();
@@ -62,7 +62,7 @@ test('Workflow A — register a detainee, then the station commander authorizes 
 
 test('Workflow B — officer posting: HR proposes, supervisor approves, receiving station confirms', async ({ page }) => {
   await signIn(page, 'police.hr@nexcust.demo');
-  await page.getByRole('link', { name: 'Personnel & Postings' }).click();
+  await page.locator('aside').getByRole('link', { name: 'Personnel & Postings', exact: true }).click();
   // find any officer still serving at a Northern station (each run moves one of them to Accra)
   let row = page.getByRole('row').filter({ hasText: 'DEMO Northern Station' }).first();
   for (let n = 1; n <= 10; n++) {
