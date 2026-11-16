@@ -36,6 +36,40 @@ export class PrisonsController {
       capacity, occupancyRate: capacity ? Math.round((population / capacity) * 100) : null, facilities };
   }
 
+  /** Map data: each administrative region's prison figures within the caller's jurisdiction, and every mapped establishment. Aggregates only. */
+  @Get('map')
+  @RequirePermission('prisons.dashboard.read')
+  async map(@Req() req: AuthedRequest) {
+    const scope = req.scope!; const fs = facilityScope(scope);
+    const [facilities, regions, root, held, remand] = await Promise.all([
+      this.prisma.facility.findMany({ where: { ...PRISONS, orgUnit: unitWhere(scope) },
+        select: { id: true, name: true, town: true, capacity: true, regionId: true, latitude: true, longitude: true, coordPrecision: true, facilityType: { select: { name: true } }, orgUnit: { select: { verificationStatus: true } } } }),
+      this.prisma.region.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+      this.prisma.organizationalUnit.findFirst({ where: { institution: { code: 'PRISONS' }, parentId: null }, select: { path: true } }),
+      this.prisma.prisonCustodyEpisode.groupBy({ by: ['facilityId'], where: { ...fs, status: HELD }, _count: { _all: true } }),
+      this.prisma.prisonCustodyEpisode.groupBy({ by: ['facilityId'], where: { ...fs, status: HELD, classification: 'REMAND' }, _count: { _all: true } }),
+    ]);
+    const pop = new Map(held.map((r) => [r.facilityId, r._count._all])); const rem = new Map(remand.map((r) => [r.facilityId, r._count._all]));
+    // Occupancy only counts establishments whose capacity is published, so an unknown capacity never inflates the rate.
+    const occupancy = (fs: typeof facilities) => {
+      const known = fs.filter((f) => f.capacity); const cap = known.reduce((n, f) => n + f.capacity!, 0);
+      return cap ? Math.round((known.reduce((n, f) => n + (pop.get(f.id) ?? 0), 0) / cap) * 100) : null;
+    };
+    // A national jurisdiction covers every region, including any without a unit; otherwise only regions holding the caller's units.
+    const national = scope.all || (!!root && scope.paths.some((path) => root.path.startsWith(path)));
+    return {
+      regions: regions.map((r) => {
+        const own = facilities.filter((f) => f.regionId === r.id);
+        return { name: r.name, inScope: national || own.length > 0, units: own.length, capacity: own.reduce((n, f) => n + (f.capacity ?? 0), 0),
+          values: { population: own.reduce((n, f) => n + (pop.get(f.id) ?? 0), 0), remand: own.reduce((n, f) => n + (rem.get(f.id) ?? 0), 0), occupancy: occupancy(own) } };
+      }),
+      points: facilities.filter((f) => f.latitude != null).map((f) => ({ id: f.id, name: f.name, town: f.town, lat: f.latitude!, lng: f.longitude!, precise: f.coordPrecision !== 'TOWN',
+        status: f.orgUnit.verificationStatus, type: f.facilityType.name, capacity: f.capacity, region: regions.find((r) => r.id === f.regionId)?.name ?? null,
+        values: { population: pop.get(f.id) ?? 0, remand: rem.get(f.id) ?? 0, occupancy: f.capacity ? Math.round(((pop.get(f.id) ?? 0) / f.capacity) * 100) : null } })),
+      unmapped: facilities.filter((f) => f.latitude == null).length,
+    };
+  }
+
   private async occupancy(scope: AccessScope) {
     const rows = await this.prisma.facility.findMany({ where: { ...PRISONS, orgUnit: unitWhere(scope) }, orderBy: { name: 'asc' },
       select: { id: true, code: true, name: true, capacity: true, functions: true, operationalStatus: true, isSynthetic: true, facilityType: { select: { name: true } },

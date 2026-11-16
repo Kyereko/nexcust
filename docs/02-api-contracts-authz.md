@@ -26,6 +26,9 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `GET /police/cases` | `police.case.read` | unit subtree | — |
 | `GET /police/personnel` | `police.personnel.read` | unit subtree | — |
 | `GET /police/stations` | `police.facility.read` | unit subtree | — |
+| `GET /police/stations/directory?q=&command=` | `police.facility.read` | unit subtree; a command filter narrows, never widens | — |
+| `GET /police/map` | `police.dashboard.read` | unit subtree; totals by administrative region plus each mapped station's figures (no person) | — |
+| `GET /prisons/map` | `prisons.dashboard.read` | unit subtree; population, remand and occupancy by region and establishment (occupancy only where capacity is published) | — |
 | `POST /persons` | `person.write` | national | creation; duplicate review enforced (409 `POSSIBLE_DUPLICATES` / `IDENTIFIER_EXISTS`) |
 | `GET /police/persons/:id/record` | `police.case.read` | station records by subtree; convictions national | every view |
 | `POST /police/arrests` | `police.custody.write` | station must be in subtree; arrest basis and rights information (art. 14(2)) required | yes |

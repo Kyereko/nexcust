@@ -149,6 +149,22 @@ describe('data handling', () => {
     const prisons = (await (await as('prisons.national@nexcust.fourthit.com')).get('/api/prisons/dashboard').expect(200)).body;
     expect(prisons.population).toBe(prisons.remand + prisons.convicted);
   });
+  it('map figures add up to the dashboard and follow the caller\'s jurisdiction', async () => {
+    const sum = (m: any, k: string) => m.regions.reduce((n: number, r: any) => n + (r.values[k] ?? 0), 0);
+    const nat = (await (await as('police.national@nexcust.fourthit.com')).get('/api/police/map').expect(200)).body;
+    const natDash = (await (await as('police.national@nexcust.fourthit.com')).get('/api/police/dashboard').expect(200)).body;
+    expect(nat.regions).toHaveLength(16); expect(nat.regions.every((r: any) => r.inScope)).toBe(true);
+    expect(sum(nat, 'inCustody')).toBe(natDash.inCustody); expect(sum(nat, 'arrests30d')).toBe(natDash.arrests30d);
+    expect(nat.points.length + nat.unmapped).toBe(natDash.stations);
+    expect(JSON.stringify(nat)).not.toMatch(/surname|otherNames|indexNumber/);
+    const reg = (await (await as('police.regional@nexcust.fourthit.com')).get('/api/police/map').expect(200)).body;
+    expect(reg.regions.filter((r: any) => r.inScope).map((r: any) => r.name)).toEqual(['Greater Accra']);
+    expect(reg.points.every((p: any) => p.region === 'Greater Accra')).toBe(true);
+    const pri = (await (await as('prisons.national@nexcust.fourthit.com')).get('/api/prisons/map').expect(200)).body;
+    const priDash = (await (await as('prisons.national@nexcust.fourthit.com')).get('/api/prisons/dashboard').expect(200)).body;
+    expect(sum(pri, 'population')).toBe(priDash.population);
+    await (await as('police.hr@nexcust.fourthit.com')).get('/api/prisons/map').expect(403);
+  });
   it('validates input (rejects unknown query parameters and oversized pages)', async () => {
     const a = await as('police.national@nexcust.fourthit.com');
     await a.get('/api/police/custody?pageSize=5000').expect(400);

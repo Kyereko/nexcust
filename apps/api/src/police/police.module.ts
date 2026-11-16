@@ -51,6 +51,42 @@ export class PoliceController {
     };
   }
 
+  /**
+   * Map data: each administrative region's totals within the caller's jurisdiction, and every mapped station with its own
+   * figures. Aggregates only; no person appears. A region holding none of the caller's stations is marked inScope: false.
+   */
+  @Get('map')
+  @RequirePermission('police.dashboard.read')
+  async map(@Req() req: AuthedRequest) {
+    const scope = req.scope!; const fs = facilityScope(scope); const now = new Date(); const d30 = new Date(now.getTime() - 30 * 86400_000);
+    const [facilities, regions, root, inCustody, pastDeadline, arrests30d, openCases] = await Promise.all([
+      this.prisma.facility.findMany({ where: { ...POLICE, orgUnit: unitWhere(scope) },
+        select: { id: true, name: true, town: true, regionId: true, latitude: true, longitude: true, coordPrecision: true, orgUnit: { select: { verificationStatus: true } } } }),
+      this.prisma.region.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+      this.prisma.organizationalUnit.findFirst({ where: { institution: { code: 'POLICE' }, parentId: null }, select: { path: true } }),
+      this.prisma.policeCustodyEpisode.groupBy({ by: ['facilityId'], where: { ...fs, status: 'IN_CUSTODY' }, _count: { _all: true } }),
+      this.prisma.policeCustodyEpisode.groupBy({ by: ['facilityId'], where: { ...fs, status: 'IN_CUSTODY', courtDeadlineAt: { lt: now } }, _count: { _all: true } }),
+      this.prisma.arrest.groupBy({ by: ['facilityId'], where: { ...fs, arrestedAt: { gte: d30 }, voidedAt: null }, _count: { _all: true } }),
+      this.prisma.policeCase.groupBy({ by: ['facilityId'], where: { ...fs, status: { not: 'CLOSED' } }, _count: { _all: true } }),
+    ]);
+    const m = (rows: Array<{ facilityId: string; _count: { _all: number } }>) => new Map(rows.map((r) => [r.facilityId, r._count._all]));
+    const measures = { inCustody: m(inCustody), pastDeadline: m(pastDeadline), arrests30d: m(arrests30d), openCases: m(openCases) };
+    const keys = Object.keys(measures) as Array<keyof typeof measures>;
+    const valuesOf = (id: string) => Object.fromEntries(keys.map((k) => [k, measures[k].get(id) ?? 0])) as Record<keyof typeof measures, number>;
+    // A national jurisdiction covers every region, including any without a unit; otherwise only regions holding the caller's units.
+    const national = scope.all || (!!root && scope.paths.some((path) => root.path.startsWith(path)));
+    return {
+      regions: regions.map((r) => {
+        const own = facilities.filter((f) => f.regionId === r.id);
+        return { name: r.name, inScope: national || own.length > 0, units: own.length,
+          values: Object.fromEntries(keys.map((k) => [k, own.reduce((n, f) => n + (measures[k].get(f.id) ?? 0), 0)])) };
+      }),
+      points: facilities.filter((f) => f.latitude != null).map((f) => ({ id: f.id, name: f.name, town: f.town, lat: f.latitude!, lng: f.longitude!,
+        precise: f.coordPrecision !== 'TOWN', status: f.orgUnit.verificationStatus, region: regions.find((r) => r.id === f.regionId)?.name ?? null, values: valuesOf(f.id) })),
+      unmapped: facilities.filter((f) => f.latitude == null).length,
+    };
+  }
+
   /** Roll-up by regional command (or the caller's own unit) plus a six-month arrest trend. Aggregates only. */
   @Get('reports')
   @RequirePermission('police.dashboard.read')

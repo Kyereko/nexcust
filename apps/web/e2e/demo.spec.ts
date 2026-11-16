@@ -67,3 +67,19 @@ test('rank catalogue shows evidence status as reference data', async ({ page }) 
   await expect(page.getByRole('cell', { name: 'Inspector-General of Police', exact: true })).toBeVisible();
   await expect(page.getByText('VERIFIED').first()).toBeVisible();
 });
+
+test('the national police dashboard maps every region and lists a selected region\'s busiest stations', async ({ page }) => {
+  await signIn(page, 'police.national@nexcust.fourthit.com');
+  await expect(page.getByRole('heading', { name: 'Command map' })).toBeVisible();
+  await expect(page.locator('path[aria-label$="Region: outside your jurisdiction"]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Arrests, 30 days' }).click();
+  await page.locator('path[aria-label^="Greater Accra Region"]').click();
+  await expect(page.getByRole('heading', { name: 'Greater Accra Region' })).toBeVisible();
+  await expect(page.getByText('Nima Police Station').first()).toBeVisible();
+});
+
+test('a regional commander sees only their region on the map', async ({ page }) => {
+  await signIn(page, 'police.regional@nexcust.fourthit.com');
+  await expect(page.getByRole('heading', { name: 'Command map' })).toBeVisible();
+  await expect(page.locator('path[aria-label$="Region: outside your jurisdiction"]')).toHaveCount(15);
+});
