@@ -62,6 +62,9 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `GET /verify/:code` | public, 30/min per IP | returns authenticity, status and what is printed on the certificate | every check |
 | `POST /exchange/requests` | `exchange.request` | other institution only; purpose and legal basis mandatory; fixed minimal summary | yes |
 | `GET /exchange/requests/:id` | `exchange.request` | requester only | — |
+| `POST /police/custody/:id/search` | `police.custody.write` | subtree; female detainee needs a female officer or a recorded reason | yes |
+| `POST /police/custody/:id/property`, `POST /police/custody/property/:itemId/outcome` | `police.custody.write` | subtree; release blocked while items are unaccounted for | yes |
+| `GET /police/reports/s16?month=YYYY-MM` | `police.dashboard.read` | subtree; juvenile identities protected | yes |
 | `POST /police/custody/:id/juvenile-notice` | `police.custody.write` | subtree; juvenile episodes only | yes |
 | `POST /prisons/prisoners/:episodeId/remand-renewals` | `prisons.prisoner.write` | subtree; remand prisoner held | yes |
 | `GET /prisons/remand-warrants/attention` | `prisons.prisoner.read` | subtree | — |
@@ -115,6 +118,7 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `police.custody.read` |  | ● | ● | ● | ● |  |  |  |  |  |  |  |  |
 | `police.custody.write` |  |  |  |  | ● |  |  |  |  |  |  |  |  |
 | `police.custody.close` |  | ● | ● | ● |  |  |  |  |  |  |  |  |  |
+| `police.juvenile.read` |  |  |  | ● | ● |  |  |  |  |  |  |  |  |
 | `police.case.read` |  | ● | ● | ● | ● |  | ● |  |  |  |  |  |  |
 | `police.case.write` |  |  |  |  | ● |  |  |  |  |  |  |  |  |
 | `police.personnel.read` |  | ● | ● | ● |  | ● |  |  |  |  |  |  |  |

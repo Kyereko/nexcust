@@ -15,7 +15,8 @@ export async function ExchangePanel({ personId, provider, returnTo, exchangeId, 
       {s ? (
         <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm">
           <div className="mb-2 font-medium">{s.kind === 'POLICE_CUSTODY_SUMMARY' ? (s.currentlyInPoliceCustody ? 'Currently in police custody' : 'Not currently in police custody') : (s.currentlyInPrisonCustody ? 'Currently held in prison custody' : 'Not currently held in prison custody')} · as at {fmtDateTime(s.asAt)}</div>
-          {s.episodes.length === 0 ? <p className="text-slate-600">No records held.</p> : (
+          {s.juvenileRecordsWithheld > 0 && <p className="mb-2 text-xs text-brand">{s.juvenileRecordsWithheld} juvenile record(s) withheld (Act 653 s.3).</p>}
+          {s.episodes.length === 0 ? <p className="text-slate-600">No records disclosed.</p> : (
             <ul className="space-y-1">{s.episodes.map((e: any, i: number) => s.kind === 'POLICE_CUSTODY_SUMMARY'
               ? <li key={i}>{e.reference} · {e.station} · {fmtDateTime(e.detainedAt)} – {fmtDateTime(e.closedAt)} <Badge>{e.status}</Badge></li>
               : <li key={i}>{e.establishment} · {fmtDateTime(e.from)} – {fmtDateTime(e.to)} <Badge>{e.classification}</Badge> <Badge>{e.status}</Badge></li>)}</ul>)}

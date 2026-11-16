@@ -16,7 +16,7 @@ test('Workflow A — register a detainee, then the station commander authorizes 
 
   // 1–3: search first, create an identity record only because none exists
   await page.locator('aside').getByRole('link', { name: 'People & Records', exact: true }).click();
-  await page.getByLabel('Search').fill(surname);
+  await page.getByLabel('Search', { exact: true }).fill(surname);
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByText('No records found')).toBeVisible();
   await page.getByRole('link', { name: 'Register new person' }).click();
@@ -38,9 +38,24 @@ test('Workflow A — register a detainee, then the station commander authorizes 
 
   // saved and searchable in the register
   await page.locator('aside').getByRole('link', { name: 'Arrests & Custody', exact: true }).click();
-  await page.getByLabel('Search').fill(surname);
+  await page.getByLabel('Search', { exact: true }).fill(surname);
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('cell', { name: new RegExp(surname) })).toBeVisible();
+
+  // s.8: search and property held in safe custody
+  await page.goto(custodyUrl);
+  await page.getByLabel('Searching officer').fill('DEMO Cpl. Owusu');
+  await page.getByLabel('Officer is').selectOption('MALE');
+  await page.getByRole('button', { name: 'Record search' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Search recorded' })).toBeVisible();
+  await page.getByLabel('Item').fill('Mobile phone');
+  await page.getByLabel('Sealed bag').fill('BAG-E2E-1');
+  await page.getByRole('button', { name: 'Add item' }).click();
+  await expect(page.getByText('1 × Mobile phone · bag BAG-E2E-1')).toBeVisible();
+  // property must be accounted for before release (records officer)
+  await page.getByLabel('Received by').fill('Detainee in person');
+  await page.getByRole('button', { name: 'Record', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Property item accounted for' })).toBeVisible();
 
   // 7: movement; the records officer has no closing authority
   await page.goto(custodyUrl);

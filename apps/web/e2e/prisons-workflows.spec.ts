@@ -35,7 +35,7 @@ test('Workflows D and E — admit, transfer between establishments, then release
 
   // registry is updated
   await page.locator('aside').getByRole('link', { name: 'Prisoner Registry', exact: true }).click();
-  await page.getByLabel('Search').fill(surname);
+  await page.getByLabel('Search', { exact: true }).fill(surname);
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('cell', { name: new RegExp(surname) })).toBeVisible();
 

@@ -150,7 +150,9 @@ Source short keys: **ES** = eservices.police.gov.gh public client bundle (16 Nov
 | K-01 | Done | Arrest basis (warrant / s.10 / s.12), warrant reference, time reasons and right to a lawyer were given, language, lawyer requested |
 | K-03 | Done | 48-hour clock from `arrestedAt`, calendar hours; existing records re-based by migration |
 | K-04 | Done | Police enquiry bail recorded as a bond: amount, sureties, report-to (court/station), place and time, cash deposit in lieu; required for `RELEASED_ON_BAIL` |
-| K-10 | Partial | Juvenile flag from date of birth, 48 h detention-order deadline, parent/guardian notification; identity masking and separate-cell enforcement pending |
+| K-02 | Done | Search on arrest (time, officer, officer's sex); a woman searched only by a woman unless a reason is recorded; property log (item, quantity, sealed bag) with outcome — returned, retained as exhibit or handed over — required before release |
+| K-05 | Done | Section 16 monthly return per station: arrests without warrant (s.10 / s.12) with no charge, custody status and bail; printable; receiving court to be configured |
+| K-10 | Partial | Juvenile flag, 48 h detention-order deadline, parent/guardian notification; identity protected (Act 653 s.3) for everyone except the handling station's records officer and commander (`police.juvenile.read`), withheld from person records and cross-institution exchange; separate-cell enforcement and juvenile case-party masking pending |
 | P-01 | Done | Warrant types aligned to Act 30 Forms 14, 21, 24, 25, 9, s.98 and juvenile detention order, with form number and issuing judicial officer; legacy values migrated |
 | P-02 | Done | Gaoler's receipt (Form 22): escorting officer and condition at handover, required on admission |
 | P-03 | Partial | Reception medical screening (screened by, fit for admission, communicable-disease concern); observation period and rules-read steps pending |

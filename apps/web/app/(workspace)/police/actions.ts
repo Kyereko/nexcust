@@ -39,6 +39,22 @@ export async function closeCustody(f: FormData) {
   redirect(back(`/police/custody/${id}`, r.ok ? { notice: 'Custody episode closed with authorized disposition.' } : { error: r.message }));
 }
 
+export async function recordSearch(f: FormData) {
+  const id = s(f, 'id')!; const at = s(f, 'searchedAt');
+  const r = await send('POST', `/police/custody/${id}/search`, { searchedAt: at ? new Date(`${at}:00Z`).toISOString() : undefined, searchingOfficer: s(f, 'searchingOfficer'),
+    searchingOfficerSex: s(f, 'searchingOfficerSex'), overrideReason: s(f, 'overrideReason') });
+  redirect(back(`/police/custody/${id}`, r.ok ? { notice: 'Search recorded.' } : { error: r.message }));
+}
+export async function addProperty(f: FormData) {
+  const id = s(f, 'id')!; const qty = s(f, 'quantity');
+  const r = await send('POST', `/police/custody/${id}/property`, { description: s(f, 'description'), quantity: qty ? Number(qty) : 1, sealedBagRef: s(f, 'sealedBagRef') });
+  redirect(back(`/police/custody/${id}`, r.ok ? { notice: 'Property item recorded.' } : { error: r.message }));
+}
+export async function propertyOutcome(f: FormData) {
+  const id = s(f, 'id')!; const r = await send('POST', `/police/custody/property/${s(f, 'itemId')}/outcome`, { outcome: s(f, 'outcome'), receivedBy: s(f, 'receivedBy') });
+  redirect(back(`/police/custody/${id}`, r.ok ? { notice: 'Property item accounted for.' } : { error: r.message }));
+}
+
 export async function juvenileNotice(f: FormData) {
   const id = s(f, 'id')!; const at = s(f, 'notifiedAt');
   const r = await send('POST', `/police/custody/${id}/juvenile-notice`, { parentGuardianNotifiedAt: at ? new Date(`${at}:00Z`).toISOString() : undefined });

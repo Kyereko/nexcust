@@ -7,6 +7,7 @@ import { RequirePermission } from '../auth/decorators';
 import { AuthedRequest, unitWhere } from '../common/access';
 import { assertInScope } from '../common/guards';
 import { nextRef } from '../common/refs';
+import { ageAt, canSeeJuvenile } from '../common/juvenile';
 
 const CASE_STATUSES = ['OPEN', 'UNDER_INVESTIGATION', 'FORWARDED_FOR_ADVICE', 'BEFORE_COURT', 'CLOSED'] as const;
 class CreateCaseDto {
@@ -48,8 +49,14 @@ export class PoliceRecordsController {
         select: { id: true, court: true, courtCaseRef: true, offence: true, convictedAt: true, sentenceSummary: true } }),
       this.prisma.arrest.count({ where: { personId: id, voidedAt: null } }),
     ]);
+    // Act 653 s.3: records from when the person was a juvenile are withheld from users without police.juvenile.read
+    const see = canSeeJuvenile(req.auth);
+    const juvenileAt = (d: Date) => !!person.dateOfBirth && ageAt(person.dateOfBirth, d) < 18;
+    const shownArrests = see ? arrests : arrests.filter((a) => !juvenileAt(a.arrestedAt));
+    const shownCustody = see ? custody : custody.filter((c) => !juvenileAt(c.detainedAt));
     await this.audit.record(req, { action: 'police.person_record.view', outcome: 'SUCCESS', entityType: 'person', entityId: id });
-    return { person, arrests, custody, cases, convictions, recordsHeldByOtherCommands: arrestsTotal - arrests.length };
+    return { person, arrests: shownArrests, custody: shownCustody, cases, convictions, recordsHeldByOtherCommands: arrestsTotal - arrests.length,
+      juvenileRecordsWithheld: arrests.length - shownArrests.length };
   }
 
   @Post('cases')

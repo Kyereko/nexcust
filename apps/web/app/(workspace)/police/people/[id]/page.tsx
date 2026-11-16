@@ -31,6 +31,7 @@ export default async function PersonRecord({ params, searchParams }: { params: P
           <td>{a.charges.length ? a.charges.map((c: any) => <span key={c.id} className="mr-2">{c.offence} <Badge>{c.status}</Badge></span>) : '—'}</td></tr>)}
       </Table>
       {!r.arrests.length && <p className="mt-2 text-sm text-slate-600">No arrest is recorded within your command.</p>}
+      {r.juvenileRecordsWithheld > 0 && <p className="mt-2 text-sm text-brand">{r.juvenileRecordsWithheld} record{r.juvenileRecordsWithheld === 1 ? '' : 's'} from when this person was a juvenile {r.juvenileRecordsWithheld === 1 ? 'is' : 'are'} withheld (Juvenile Justice Act, 2003 s.3).</p>}
       {r.recordsHeldByOtherCommands > 0 && <p className="mt-2 text-sm text-amber-800">{r.recordsHeldByOtherCommands} arrest record{r.recordsHeldByOtherCommands === 1 ? ' is' : 's are'} held by other commands and not shown at your access level.</p>}
       <h2 className="mb-2 mt-6 font-semibold">Custody episodes</h2>
       <Table head={['Reference', 'Station', 'Detained', 'Closed', 'Status']}>

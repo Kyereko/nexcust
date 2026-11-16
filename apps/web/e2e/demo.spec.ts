@@ -30,7 +30,7 @@ test('prison login opens the prisons workspace and the registry is searchable', 
   await expect(page).toHaveURL(/\/prisons$/);
   await expect(page.getByRole('heading', { name: 'Prisons dashboard' })).toBeVisible();
   await page.locator('aside').getByRole('link', { name: 'Prisoner Registry', exact: true }).click();
-  await page.getByLabel('Search').fill('DEMO-PN');
+  await page.getByLabel('Search', { exact: true }).fill('DEMO-PN');
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('link', { name: /DEMO-PN-/ }).first()).toBeVisible();
   await expect(page.getByRole('cell', { name: 'DEMO Northern Central Prison' })).toHaveCount(0); // other establishments are out of scope
@@ -53,7 +53,7 @@ test('cross-institution access is denied and appears in the audit trail', async 
   await expect(page).toHaveURL(/\/login/);
   await signIn(page, 'auditor@nexcust.demo');
   await expect(page).toHaveURL(/\/audit$/);
-  await page.getByLabel('Search').fill('prisons.records@nexcust.demo');
+  await page.getByLabel('Search', { exact: true }).fill('prisons.records@nexcust.demo');
   await page.getByLabel('Status').selectOption('DENIED');
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('cell', { name: 'access.denied' }).first()).toBeVisible();

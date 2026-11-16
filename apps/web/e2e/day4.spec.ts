@@ -30,7 +30,7 @@ test('Workflow C — clearance on the portal flow: apply, pay, fingerprints, cri
 
   await signIn(page, 'police.bgcheck@nexcust.demo');
   await page.locator('aside').getByRole('link', { name: 'Background Checks', exact: true }).click();
-  await page.getByLabel('Search').fill(reference);
+  await page.getByLabel('Search', { exact: true }).fill(reference);
   await page.getByRole('button', { name: 'Search' }).click();
   await page.getByRole('link', { name: reference }).click();
   const record = async (label: string) => { await page.getByLabel('Note').fill(`${label} (browser test)`); await page.getByRole('button', { name: 'Record step' }).click(); await expect(page.getByRole('status').filter({ hasText: `Recorded: ${label}.` })).toBeVisible(); };
@@ -78,7 +78,7 @@ test('Workflow C — clearance on the portal flow: apply, pay, fingerprints, cri
 test('authorized exchange — police see whether a person is in prison custody, with purpose recorded', async ({ page }) => {
   await signIn(page, 'police.records@nexcust.demo');
   await page.locator('aside').getByRole('link', { name: 'People & Records', exact: true }).click();
-  await page.getByLabel('Search').fill('DEMO-NPI-000302');
+  await page.getByLabel('Search', { exact: true }).fill('DEMO-NPI-000302');
   await page.getByRole('button', { name: 'Search' }).click();
   await page.getByRole('link', { name: 'Police record' }).click();
   await page.getByRole('button', { name: 'Request summary' }).click();

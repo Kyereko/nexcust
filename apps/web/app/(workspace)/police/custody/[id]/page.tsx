@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { api, fmtDate, fmtDateTime, getSession } from '@/lib/api';
 import { Badge, Button, Card, Field, Flash, Label, PageHeader, inputCls } from '@/components/ui';
-import { addMovement, closeCustody, juvenileNotice, reviewCustody } from '../../actions';
+import { addMovement, addProperty, closeCustody, juvenileNotice, propertyOutcome, recordSearch, reviewCustody } from '../../actions';
 
 const BASIS: Record<string, string> = { WARRANT: 'Under warrant', WITHOUT_WARRANT_S10: 'Without warrant (Act 30 s.10)', PRIVATE_PERSON_S12: 'By a private person (s.12)' };
 
@@ -28,6 +28,7 @@ export default async function CustodyDetail({ params, searchParams }: { params: 
       {overdue && <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">Held beyond the configured court deadline ({fmtDateTime(e.courtDeadlineAt)}). Refer to the authorizing officer.</p>}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-5"><h2 className="mb-3 font-semibold">Person (identity record)</h2>
+          {e.person.identityProtected && <p className="mb-3 rounded-md bg-sage px-3 py-2 text-xs text-brand">Identity protected: this person was a juvenile at arrest (Juvenile Justice Act, 2003 s.3). Only the handling station&apos;s records officer and commander see identifying details.</p>}
           <dl className="grid grid-cols-2 gap-4">
             <Field label="Name">{e.person.surname}, {e.person.otherNames}</Field><Field label="Person index no.">{e.person.indexNumber}</Field>
             <Field label="Sex">{e.person.sex}</Field><Field label="Date of birth">{fmtDate(e.person.dateOfBirth)}</Field>
@@ -46,6 +47,42 @@ export default async function CustodyDetail({ params, searchParams }: { params: 
             {e.bailBond && <Field label="Bail bond (Act 30 s.15(2))">GH₵{e.bailBond.amountGhs.toLocaleString()}{e.bailBond.depositInLieuGhs ? ` (cash deposit GH₵${e.bailBond.depositInLieuGhs.toLocaleString()})` : ''} · report to {e.bailBond.reportTo === 'COURT' ? 'court' : 'police station'} — {e.bailBond.reportPlace}, {fmtDateTime(e.bailBond.reportAt)} · sureties: {(e.bailBond.sureties as any[]).map((x) => x.name).join(', ') || 'none'}</Field>}
           </dl>
           <p className="mt-4 text-xs text-slate-500">An arrest or detention record is not a finding of guilt.</p>
+        </Card>
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Card className="p-5"><h2 className="mb-3 font-semibold">Search on arrest (Act 30 s.8)</h2>
+          {e.searchedAt ? <dl className="grid grid-cols-2 gap-4"><Field label="Searched at">{fmtDateTime(e.searchedAt)}</Field><Field label="By">{e.searchingOfficer} ({e.searchingOfficerSex === 'FEMALE' ? 'female' : 'male'} officer)</Field>
+              {e.searchOverrideReason && <Field label="Reason recorded">{e.searchOverrideReason}</Field>}</dl>
+            : open && can('police.custody.write') ? (
+              <form action={recordSearch} className="grid gap-3 sm:grid-cols-2"><input type="hidden" name="id" value={e.id} />
+                <Label text="Searched at (GMT)"><input type="datetime-local" name="searchedAt" required defaultValue={new Date().toISOString().slice(0, 16)} className={inputCls} /></Label>
+                <Label text="Searching officer"><input name="searchingOfficer" required minLength={3} maxLength={120} placeholder="Rank and name" className={inputCls} /></Label>
+                <Label text="Officer is"><select name="searchingOfficerSex" className={inputCls}><option value="FEMALE">Female</option><option value="MALE">Male</option></select></Label>
+                <Label text="Reason (only if a woman was not searched by a woman)"><input name="overrideReason" maxLength={500} className={inputCls} /></Label>
+                <div className="sm:col-span-2"><Button tone="secondary">Record search</Button></div></form>
+            ) : <p className="text-sm text-slate-500">Not recorded.</p>}
+        </Card>
+        <Card className="p-5"><h2 className="mb-3 font-semibold">Property in safe custody</h2>
+          {e.property.length ? <ul className="space-y-2 text-sm">{e.property.map((p: any) => (
+            <li key={p.id} className="rounded-md border border-line bg-white p-2">
+              <div className="flex flex-wrap items-center justify-between gap-2"><span>{p.quantity} × {p.description}{p.sealedBagRef ? ` · bag ${p.sealedBagRef}` : ''}</span>
+                {p.outcome ? <Badge tone="green">{p.outcome.replace(/_/g, ' ')}</Badge> : <Badge tone="amber">HELD</Badge>}</div>
+              {p.outcome && <div className="text-xs text-slate-500">{fmtDateTime(p.outcomeAt)}{p.receivedBy ? ` · received by ${p.receivedBy}` : ''}</div>}
+              {!p.outcome && can('police.custody.write') && (
+                <form action={propertyOutcome} className="mt-2 flex flex-wrap items-end gap-2"><input type="hidden" name="id" value={e.id} /><input type="hidden" name="itemId" value={p.id} />
+                  <select name="outcome" aria-label="Outcome" className="rounded-md border border-line bg-white px-2 py-1.5 text-xs"><option value="RETURNED">Returned</option><option value="RETAINED_AS_EXHIBIT">Retained as exhibit</option><option value="HANDED_OVER">Handed over</option></select>
+                  <input name="receivedBy" aria-label="Received by" placeholder="Received by" className="flex-1 rounded-md border border-line bg-white px-2 py-1.5 text-xs" />
+                  <Button tone="secondary">Record</Button></form>
+              )}
+            </li>))}</ul> : <p className="text-sm text-slate-500">No property recorded.</p>}
+          {open && can('police.custody.write') && (
+            <form action={addProperty} className="mt-3 flex flex-wrap items-end gap-2"><input type="hidden" name="id" value={e.id} />
+              <label className="flex-1 text-xs font-medium text-slate-700">Item<input name="description" required minLength={2} maxLength={300} className={inputCls} /></label>
+              <label className="w-16 text-xs font-medium text-slate-700">Qty<input type="number" name="quantity" min={1} defaultValue={1} className={inputCls} /></label>
+              <label className="w-28 text-xs font-medium text-slate-700">Sealed bag<input name="sealedBagRef" maxLength={60} className={inputCls} /></label>
+              <Button tone="secondary">Add item</Button></form>
+          )}
+          <p className="mt-2 text-xs text-slate-500">Every item must be returned, retained as an exhibit or handed over before release.</p>
         </Card>
       </div>
       <Card className="mt-4 p-5"><h2 className="mb-3 font-semibold">Movement history (immutable)</h2>

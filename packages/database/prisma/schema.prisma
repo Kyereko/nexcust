@@ -925,11 +925,17 @@ model PoliceCustodyEpisode {
   isJuvenile                  Boolean             @default(false)
   juvenileDetentionOrderDueAt DateTime?
   parentGuardianNotifiedAt    DateTime?
+  /// Search on arrest (Act 30 s.8): a woman is searched only by a woman — an override needs a recorded reason
+  searchedAt                  DateTime?
+  searchingOfficer            String?
+  searchingOfficerSex         Sex?
+  searchOverrideReason        String?
   createdAt                   DateTime            @default(now())
   updatedAt                   DateTime            @updatedAt
 
   movements CustodyMovement[]
   bailBond  PoliceBailBond?
+  property  CustodyPropertyItem[]
 
   @@index([facilityId, status])
   @@index([personId])
@@ -952,6 +958,27 @@ model PoliceBailBond {
   createdAt        DateTime             @default(now())
 
   @@map("police_bail_bonds")
+}
+
+/// Articles taken from a detainee and kept in safe custody (Act 30 s.8). Each must be returned, retained as an
+/// exhibit or handed over before the person is released.
+model CustodyPropertyItem {
+  id           String               @id @default(uuid()) @db.Uuid
+  episodeId    String               @db.Uuid
+  episode      PoliceCustodyEpisode @relation(fields: [episodeId], references: [id], onDelete: Restrict)
+  description  String
+  quantity     Int                  @default(1)
+  sealedBagRef String?
+  recordedAt   DateTime             @default(now())
+  recordedById String               @db.Uuid
+  /// RETURNED | RETAINED_AS_EXHIBIT | HANDED_OVER (e.g. to court or prison escort)
+  outcome      String?
+  outcomeAt    DateTime?
+  outcomeById  String?              @db.Uuid
+  receivedBy   String?
+
+  @@index([episodeId])
+  @@map("custody_property_items")
 }
 
 /// Immutable movement log.

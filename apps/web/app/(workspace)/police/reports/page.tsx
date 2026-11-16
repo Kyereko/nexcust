@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { api, fmtDateTime } from '@/lib/api';
 import { BarChart, monthLabel } from '@/components/bar-chart';
 import { PageHeader, Table } from '@/components/ui';
@@ -7,7 +8,9 @@ export default async function PoliceReports() {
   const cols: Array<[string, string]> = [['stations', 'Stations'], ['inCustody', 'In custody'], ['pastDeadline', 'Past court deadline'], ['arrests30d', 'Arrests (30 d)'], ['custodyClosed30d', 'Custody closed (30 d)'], ['openCases', 'Open cases'], ['personnel', 'Active personnel']];
   return (
     <>
-      <PageHeader title="Reports & analytics" subtitle={`Aggregated by command within your jurisdiction · generated ${fmtDateTime(r.generatedAt)}`} />
+      <PageHeader title="Reports & analytics" subtitle={`Aggregated by command within your jurisdiction · generated ${fmtDateTime(r.generatedAt)}`}>
+        <Link prefetch={false} href="/police/reports/s16" className="rounded-md border border-brand/30 bg-white px-4 py-2 text-sm font-medium text-brand hover:bg-sage">Section 16 monthly return</Link>
+      </PageHeader>
       <Table head={['Command', ...cols.map((c) => c[1])]} empty={!r.rows.length}>
         {r.rows.map((row: any) => (
           <tr key={row.id}><td className="font-medium">{row.name}</td>{cols.map(([k]) => <td key={k} className={`tabular-nums ${k === 'pastDeadline' && row[k] ? 'font-semibold text-red-700' : ''}`}>{row[k]}{k === 'pastDeadline' && row[k] ? ' ⚠' : ''}</td>)}</tr>

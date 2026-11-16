@@ -51,9 +51,11 @@ export class ExchangeController {
 
   /** Police → prisons: police custody episodes (status and dates only). */
   private async policeSummary(personId: string) {
-    const eps = await this.prisma.policeCustodyEpisode.findMany({ where: { personId }, orderBy: { detainedAt: 'desc' }, take: 5,
-      select: { reference: true, status: true, detainedAt: true, closedAt: true, facility: { select: { name: true } } } });
+    const all = await this.prisma.policeCustodyEpisode.findMany({ where: { personId }, orderBy: { detainedAt: 'desc' }, take: 10,
+      select: { reference: true, status: true, detainedAt: true, closedAt: true, isJuvenile: true, facility: { select: { name: true } } } });
+    const eps = all.filter((e) => !e.isJuvenile).slice(0, 5); // juvenile records are never disclosed across institutions (Act 653 s.3)
     return { kind: 'POLICE_CUSTODY_SUMMARY', asAt: new Date().toISOString(), currentlyInPoliceCustody: eps.some((e) => e.status === 'IN_CUSTODY'),
+      juvenileRecordsWithheld: all.length - all.filter((e) => !e.isJuvenile).length,
       episodes: eps.map((e) => ({ reference: e.reference, station: e.facility.name, status: e.status, detainedAt: e.detainedAt, closedAt: e.closedAt })) };
   }
 

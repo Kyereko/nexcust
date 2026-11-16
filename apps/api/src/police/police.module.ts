@@ -5,6 +5,8 @@ import { AuditService } from '../audit/audit.service';
 import { RequirePermission } from '../auth/decorators';
 import { AccessScope, AuthedRequest, inScope, unitWhere } from '../common/access';
 import { ListQuery, page, paging } from '../common/pagination';
+import { canSeeJuvenile, protectPerson } from '../common/juvenile';
+import { BadRequestException } from '@nestjs/common';
 import { PoliceCustodyController } from './custody.controller';
 import { PoliceRecordsController } from './records.controller';
 import { PolicePostingsController } from './postings.controller';
@@ -84,7 +86,35 @@ export class PoliceController {
       }),
       this.prisma.policeCustodyEpisode.count({ where }),
     ]);
-    return page(items, total, q);
+    const see = canSeeJuvenile(req.auth);
+    return page(items.map((i) => (i.isJuvenile && !see ? { ...i, person: protectPerson(i.person) } : i)), total, q);
+  }
+
+  /**
+   * Return under s.16 of Act 30: each month the officer in charge reports to the District Magistrate the persons
+   * arrested without warrant and not charged, stating whether they were admitted to bail.
+   */
+  @Get('reports/s16')
+  @RequirePermission('police.dashboard.read')
+  async s16Return(@Req() req: AuthedRequest, @Query('month') month?: string) {
+    const m = month ?? new Date().toISOString().slice(0, 7);
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) throw new BadRequestException('Month must be YYYY-MM');
+    const from = new Date(`${m}-01T00:00:00Z`); const to = new Date(from); to.setUTCMonth(to.getUTCMonth() + 1);
+    const arrests = await this.prisma.arrest.findMany({
+      where: { ...facilityScope(req.scope!), arrestedAt: { gte: from, lt: to }, voidedAt: null, arrestBasis: { in: ['WITHOUT_WARRANT_S10', 'PRIVATE_PERSON_S12'] }, charges: { none: {} } },
+      orderBy: [{ facility: { name: 'asc' } }, { arrestedAt: 'asc' }],
+      select: { id: true, reference: true, arrestedAt: true, suspectedOffence: true, arrestBasis: true, facility: { select: { id: true, name: true } },
+        person: { select: { id: true, indexNumber: true, surname: true, otherNames: true } },
+        custodyEpisodes: { select: { status: true, isJuvenile: true, closedAt: true, bailBond: { select: { reportTo: true, reportAt: true } } } } } });
+    const see = canSeeJuvenile(req.auth);
+    const rows = arrests.map((a) => {
+      const ep = a.custodyEpisodes[0]; const juvenile = !!ep?.isJuvenile;
+      return { id: a.id, reference: a.reference, station: a.facility.name, arrestedAt: a.arrestedAt, suspectedOffence: a.suspectedOffence, arrestBasis: a.arrestBasis,
+        person: juvenile && !see ? protectPerson(a.person) : a.person, juvenile,
+        custodyStatus: ep?.status ?? 'NOT_DETAINED', admittedToBail: ep?.status === 'RELEASED_ON_BAIL', bail: ep?.bailBond ?? null };
+    });
+    await this.audit.record(req, { action: 'police.report.s16', outcome: 'SUCCESS', detail: { month: m, rows: rows.length } });
+    return { month: m, generatedAt: new Date(), rows, stations: [...new Set(rows.map((r) => r.station))] };
   }
 
   @Get('custody/:id')
@@ -92,15 +122,17 @@ export class PoliceController {
   async custodyDetail(@Req() req: AuthedRequest, @Param('id', ParseUUIDPipe) id: string) {
     const ep = await this.prisma.policeCustodyEpisode.findUnique({
       where: { id },
-      include: { person: { include: { identifiers: true } }, facility: { include: { orgUnit: true } }, arrest: { include: { case: true } }, movements: { orderBy: { occurredAt: 'asc' } }, bailBond: true },
+      include: { person: { include: { identifiers: true } }, facility: { include: { orgUnit: true } }, arrest: { include: { case: true } }, movements: { orderBy: { occurredAt: 'asc' } }, bailBond: true,
+        property: { orderBy: { recordedAt: 'asc' } } },
     });
     if (!ep) throw new NotFoundException();
     if (!inScope(req.scope!, ep.facility.orgUnit.path)) {
       await this.audit.record(req, { action: 'access.denied', outcome: 'DENIED', permission: 'police.custody.read', entityType: 'police_custody_episode', entityId: id, detail: { reason: 'outside_jurisdiction' } });
       throw new ForbiddenException('This record is outside your jurisdiction');
     }
-    await this.audit.record(req, { action: 'police.custody.view', outcome: 'SUCCESS', entityType: 'police_custody_episode', entityId: id });
-    return ep;
+    const protect = ep.isJuvenile && !canSeeJuvenile(req.auth);
+    await this.audit.record(req, { action: 'police.custody.view', outcome: 'SUCCESS', entityType: 'police_custody_episode', entityId: id, detail: ep.isJuvenile ? { juvenile: true, identityShown: !protect } : undefined });
+    return protect ? { ...ep, person: protectPerson(ep.person) } : ep;
   }
 
   @Get('cases')

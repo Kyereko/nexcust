@@ -54,6 +54,21 @@ class BailBondDto {
   @ApiProperty() @IsDateString() reportAt: string;
   @ApiPropertyOptional({ description: 'Cash deposit in lieu of a bond (s.99), Ghana cedis' }) @IsOptional() @IsInt() @Min(0) @Max(100_000_000) depositInLieuGhs?: number;
 }
+class SearchDto {
+  @ApiProperty() @IsDateString() searchedAt: string;
+  @ApiProperty() @IsString() @MinLength(3) @MaxLength(120) searchingOfficer: string;
+  @ApiProperty({ enum: ['MALE', 'FEMALE'] }) @IsIn(['MALE', 'FEMALE']) searchingOfficerSex: 'MALE' | 'FEMALE';
+  @ApiPropertyOptional({ description: 'Required if a female detainee was searched by a male officer (Act 30 s.8)' }) @IsOptional() @IsString() @MinLength(10) @MaxLength(500) overrideReason?: string;
+}
+class PropertyDto {
+  @ApiProperty() @IsString() @MinLength(2) @MaxLength(300) description: string;
+  @ApiProperty() @IsInt() @Min(1) @Max(10000) quantity: number;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(60) sealedBagRef?: string;
+}
+class PropertyOutcomeDto {
+  @ApiProperty({ enum: ['RETURNED', 'RETAINED_AS_EXHIBIT', 'HANDED_OVER'] }) @IsIn(['RETURNED', 'RETAINED_AS_EXHIBIT', 'HANDED_OVER']) outcome: 'RETURNED' | 'RETAINED_AS_EXHIBIT' | 'HANDED_OVER';
+  @ApiPropertyOptional({ description: 'Who received the item (returned to / handed to)' }) @IsOptional() @IsString() @MaxLength(120) receivedBy?: string;
+}
 class JuvenileNoticeDto {
   @ApiProperty() @IsDateString() parentGuardianNotifiedAt: string;
 }
@@ -134,6 +149,45 @@ export class PoliceCustodyController {
     return movement;
   }
 
+  /** Search on arrest (Act 30 s.8). A woman may be searched only by a woman; any exception needs a recorded reason. */
+  @Post('custody/:id/search')
+  @RequirePermission('police.custody.write')
+  async recordSearch(@Req() req: AuthedRequest, @Param('id', ParseUUIDPipe) id: string, @Body() dto: SearchDto) {
+    const ep = await this.episode(req, id);
+    if (ep.searchedAt) throw new ConflictException('The search has already been recorded');
+    const person = await this.prisma.person.findUniqueOrThrow({ where: { id: ep.personId }, select: { sex: true } });
+    if (person.sex === 'FEMALE' && dto.searchingOfficerSex !== 'FEMALE' && !dto.overrideReason)
+      throw new BadRequestException('A woman may be searched only by a woman (Act 30 s.8). Record the reason if this was not possible.');
+    const updated = await this.prisma.policeCustodyEpisode.update({ where: { id }, data: { searchedAt: notFuture(dto.searchedAt, 'Search time'), searchingOfficer: dto.searchingOfficer,
+      searchingOfficerSex: dto.searchingOfficerSex, searchOverrideReason: dto.overrideReason ?? null } });
+    await this.audit.record(req, { action: 'police.custody.search', outcome: 'SUCCESS', entityType: 'police_custody_episode', entityId: id, detail: dto.overrideReason ? { override: true } : undefined });
+    return updated;
+  }
+
+  /** Articles taken into safe custody (Act 30 s.8). */
+  @Post('custody/:id/property')
+  @RequirePermission('police.custody.write')
+  async addProperty(@Req() req: AuthedRequest, @Param('id', ParseUUIDPipe) id: string, @Body() dto: PropertyDto) {
+    const ep = await this.episode(req, id);
+    if (ep.status !== 'IN_CUSTODY') throw new ConflictException('This custody episode is closed');
+    const item = await this.prisma.custodyPropertyItem.create({ data: { episodeId: id, description: dto.description, quantity: dto.quantity, sealedBagRef: dto.sealedBagRef, recordedById: req.auth!.user.id } });
+    await this.audit.record(req, { action: 'police.custody.property_add', outcome: 'SUCCESS', entityType: 'police_custody_episode', entityId: id });
+    return item;
+  }
+
+  @Post('custody/property/:itemId/outcome')
+  @RequirePermission('police.custody.write')
+  async propertyOutcome(@Req() req: AuthedRequest, @Param('itemId', ParseUUIDPipe) itemId: string, @Body() dto: PropertyOutcomeDto) {
+    const item = await this.prisma.custodyPropertyItem.findUnique({ where: { id: itemId } });
+    if (!item) throw new NotFoundException();
+    await this.episode(req, item.episodeId);
+    if (item.outcome) throw new ConflictException('This item has already been accounted for');
+    if (dto.outcome !== 'RETAINED_AS_EXHIBIT' && !dto.receivedBy?.trim()) throw new BadRequestException('Record who received the item');
+    const updated = await this.prisma.custodyPropertyItem.update({ where: { id: itemId }, data: { outcome: dto.outcome, outcomeAt: new Date(), outcomeById: req.auth!.user.id, receivedBy: dto.receivedBy?.trim() || null } });
+    await this.audit.record(req, { action: 'police.custody.property_outcome', outcome: 'SUCCESS', entityType: 'police_custody_episode', entityId: item.episodeId, detail: { outcome: dto.outcome } });
+    return updated;
+  }
+
   /** Juveniles: record when the parent or guardian was informed (Act 653; practice to confirm). */
   @Post('custody/:id/juvenile-notice')
   @RequirePermission('police.custody.write')
@@ -168,6 +222,10 @@ export class PoliceCustodyController {
     const ep = await this.episode(req, id);
     if (ep.status !== 'IN_CUSTODY') throw new ConflictException('This custody episode is already closed');
     await assertDifferentActor(this.audit, req, ep.openedById, 'police.custody.close', 'police_custody_episode', id);
+    if (['RELEASED_ON_BAIL', 'RELEASED_NO_CHARGE'].includes(dto.disposition)) {
+      const open = await this.prisma.custodyPropertyItem.count({ where: { episodeId: id, outcome: null } });
+      if (open) throw new BadRequestException(`Account for all property before release: ${open} item(s) not yet returned, retained as exhibit or handed over`);
+    }
     if (dto.disposition === 'RELEASED_ON_BAIL' && !dto.bailBond) throw new BadRequestException('Police enquiry bail must be recorded as a bond: amount, sureties, where and when to report (Act 30 s.15(2))');
     const me = req.auth!.user.id; const now = new Date();
     const b = dto.disposition === 'RELEASED_ON_BAIL' ? dto.bailBond! : null;
