@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service';
 import { Public, RequirePermission } from '../auth/decorators';
 import { AuthedRequest } from '../common/access';
 import { ListQuery, page, paging } from '../common/pagination';
+import { AdminInvitationsController, InvitationAcceptController, InvitationService } from './invitations';
 
 const ID_TYPES = ['GHANA_CARD', 'PASSPORT', 'DRIVERS_LICENCE', 'VOTER_ID', 'OTHER'] as const;
 class CreatePersonDto {
@@ -127,5 +128,5 @@ export class AdminController {
   }
 }
 
-@Module({ controllers: [SharedController, AdminController] })
+@Module({ controllers: [SharedController, AdminController, AdminInvitationsController, InvitationAcceptController], providers: [InvitationService] })
 export class SharedModule {}

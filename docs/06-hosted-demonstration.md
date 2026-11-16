@@ -33,6 +33,8 @@ Browser ── https://nexcust.fourthit.com ──▶ Vercel project nexcust-web
 | nexcust-api | `API_GATEWAY_SECRET` | Sensitive. Must equal the web value |
 | nexcust-api | `DEMO_PASSWORD` | Sensitive. Password for the demo accounts, applied at first seed |
 | nexcust-api | `COOKIE_SECURE=true`, `WEB_ORIGIN` | Allowed origins for state-changing requests |
+| nexcust-api | `RESEND_API_KEY`, `MAIL_FROM` | Invitation emails. Sensitive key, sending-only, limited to the NEXCUST sending domain. Without them, administrators copy the link |
+| nexcust-api | `APP_BASE_URL` | `https://nexcust.fourthit.com`, used in invitation links |
 | nexcust-web | `API_INTERNAL_URL` | Production URL of nexcust-api |
 | nexcust-web | `API_GATEWAY_SECRET` | Sensitive |
 | nexcust-web | `DEMO_GATE_USER`, `DEMO_GATE_PASSWORD` | Password prompt for the private demo |

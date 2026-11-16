@@ -2,9 +2,11 @@
   "name": "nexcust",
   "private": true,
   "version": "0.1.0",
-  "description": "NEXCUST — DEMONSTRATION prototype (synthetic data only). Not an official Ghana Police Service or Ghana Prisons Service system.",
+  "description": "NEXCUST \u2014 DEMONSTRATION prototype (synthetic data only). Not an official Ghana Police Service or Ghana Prisons Service system.",
   "packageManager": "pnpm@10.28.0",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
@@ -13,13 +15,23 @@
     "db:migrate": "pnpm --filter @nexcust/database migrate:deploy",
     "db:seed": "pnpm --filter @nexcust/database seed",
     "db:reset": "pnpm --filter @nexcust/database reset",
-    "e2e": "pnpm --filter @nexcust/web e2e"
+    "e2e": "pnpm --filter @nexcust/web e2e",
+    "docs:authz": "pnpm --filter @nexcust/database exec tsx ../../scripts/gen-authz-doc.ts"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
     "typescript": "^5.7.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "prisma", "esbuild", "sharp", "@nestjs/core", "@swc/core", "unrs-resolver"]
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp",
+      "@nestjs/core",
+      "@swc/core",
+      "unrs-resolver"
+    ]
   }
 }

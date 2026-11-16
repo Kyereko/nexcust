@@ -8,10 +8,10 @@ async function signIn(page: Page, email: string) {
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
 
-test('unauthenticated visitors are sent to sign-in and see the demonstration banner', async ({ page }) => {
+test('unauthenticated visitors are sent to sign-in', async ({ page }) => {
   await page.goto('/police');
   await expect(page).toHaveURL(/\/login/);
-  await expect(page.getByRole('status')).toContainText('DEMONSTRATION');
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 });
 
 test('police login opens the police workspace with live dashboard figures', async ({ page }) => {

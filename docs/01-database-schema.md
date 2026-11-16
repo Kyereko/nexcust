@@ -1,13 +1,13 @@
 # 01 — Database Schema and Entity Relationships
 
-Authoritative source: `packages/database/prisma/schema.prisma` (50 tables). Migrations: `packages/database/prisma/migrations/`. This document explains the shape; the schema file wins on any difference.
+Authoritative source: `packages/database/prisma/schema.prisma` (51 tables). Migrations: `packages/database/prisma/migrations/`. This document explains the shape; the schema file wins on any difference.
 
 ## 1. Domains
 
 | Domain | Tables |
 |---|---|
 | Reference (configurable, evidence-tagged) | `institutions`, `regions` (geography only), `org_unit_types`, `organizational_units`, `facility_types`, `facilities`, `housing_units`, `ranks`, `appointments` |
-| Identity & access | `users`, `sessions`, `roles`, `permissions`, `role_permissions`, `user_role_assignments` |
+| Identity & access | `users`, `sessions`, `invitations`, `roles`, `permissions`, `role_permissions`, `user_role_assignments` |
 | Shared services | `persons`, `person_identifiers`, `documents`, `audit_events`, `approval_requests`, `data_exchange_requests` |
 | Police | `police_personnel`, `police_postings`, `police_rank_history`, `police_command_assignments`, `police_incidents`, `police_cases`, `police_case_persons`, `arrests`, `charges`, `conviction_records`, `police_custody_episodes`, `custody_movements`, `background_check_applications`, `background_check_reviews`, `clearance_certificates` |
 | Prisons | `prison_personnel`, `prison_postings`, `prison_rank_history`, `prison_command_assignments`, `prisoner_records`, `court_orders`, `prison_admissions`, `prison_custody_episodes`, `prison_transfers`, `sentence_records`, `prison_releases`, `prison_incidents`, `rehabilitation_programmes`, `rehabilitation_enrollments` |

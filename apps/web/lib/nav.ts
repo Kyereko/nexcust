@@ -13,6 +13,7 @@ export const NAV: Record<string, { title: string; accent: string; items: NavItem
     { label: 'Personnel & Postings', href: '/police/personnel', permission: 'police.personnel.read' },
     { label: 'Stations & Commands', href: '/police/stations', permission: 'police.facility.read' },
     { label: 'Reports & Analytics', href: '/police/reports', permission: 'police.dashboard.read' },
+    { label: 'Audit Trail', href: '/audit', permission: 'audit.read' },
     { label: 'Administration', href: '/police/administration' },
   ] },
   prisons: { title: 'PRISONS', accent: 'bg-prisons', items: [
@@ -25,6 +26,7 @@ export const NAV: Record<string, { title: string; accent: string; items: NavItem
     { label: 'Personnel & Postings', href: '/prisons/personnel', permission: 'prisons.personnel.read' },
     { label: 'Rehabilitation', href: '/prisons/rehabilitation', permission: 'prisons.rehab.read' },
     { label: 'Reports & Analytics', href: '/prisons/reports', permission: 'prisons.dashboard.read' },
+    { label: 'Audit Trail', href: '/audit', permission: 'audit.read' },
     { label: 'Administration', href: '/prisons/administration' },
   ] },
   admin: { title: 'PLATFORM', accent: 'bg-brand', items: [

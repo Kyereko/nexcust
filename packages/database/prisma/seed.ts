@@ -264,9 +264,14 @@ async function syncClearanceReference() {
 async function syncRbac() {
   for (const [code, description] of Object.entries(PERMISSIONS)) await prisma.permission.upsert({ where: { code }, update: { description }, create: { code, description } });
   const perms = new Map((await prisma.permission.findMany()).map((p) => [p.code, p.id]));
+  const institutions = new Map((await prisma.institution.findMany()).map((i) => [i.code, i.id]));
   for (const r of ROLES) {
-    const role = await prisma.role.findUnique({ where: { code: r.code } });
-    if (!role) continue;
+    // Roles added to the contract after the first seed are created here, so every deploy carries the full matrix.
+    const role = await prisma.role.upsert({
+      where: { code: r.code },
+      update: { name: r.name, scopeLevel: r.scopeLevel, workspace: r.workspace },
+      create: { code: r.code, name: r.name, institutionId: r.institution ? institutions.get(r.institution)! : null, scopeLevel: r.scopeLevel, workspace: r.workspace },
+    });
     await prisma.$transaction([
       prisma.rolePermission.deleteMany({ where: { roleId: role.id } }),
       prisma.rolePermission.createMany({ data: r.permissions.map((p) => ({ roleId: role.id, permissionId: perms.get(p)! })) }),

@@ -483,8 +483,34 @@ model User {
   roleAssignments UserRoleAssignment[]
   auditEvents     AuditEvent[]
   applications    BackgroundCheckApplication[]
+  invitationsSent Invitation[] @relation("InvitationsSent")
+  invitation      Invitation?  @relation("InvitationAccepted")
 
   @@map("users")
+}
+
+/// An invitation to join the platform. Only the SHA-256 of the single-use link token is stored.
+/// The account is created when the invitation is accepted, with the roles of its access profile.
+model Invitation {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String
+  displayName String
+  /// Access profile code from @nexcust/contracts ACCESS_PROFILES.
+  access      String
+  tokenHash   String    @unique
+  invitedById String    @db.Uuid
+  invitedBy   User      @relation("InvitationsSent", fields: [invitedById], references: [id], onDelete: Restrict)
+  /// SENT, NOT_CONFIGURED or FAILED: whether the email went out (the administrator can always copy the link).
+  emailStatus String?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  userId      String?   @unique @db.Uuid
+  user        User?     @relation("InvitationAccepted", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@map("invitations")
 }
 
 /// Server-managed session. Only the SHA-256 of the cookie token is stored.

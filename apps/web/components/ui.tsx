@@ -66,9 +66,9 @@ export function SearchBar({ q, placeholder, statuses, status }: { q?: string; pl
   );
 }
 
-export function Pager({ total, page, pageSize, base, params }: { total: number; page: number; pageSize: number; base: string; params: Record<string, string | undefined> }) {
+export function Pager({ total, page, pageSize, base, params, pageParam = 'page' }: { total: number; page: number; pageSize: number; base: string; params: Record<string, string | undefined>; pageParam?: string }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  const href = (p: number) => { const u = new URLSearchParams(); Object.entries({ ...params, page: String(p) }).forEach(([k, v]) => v && u.set(k, v)); return `${base}?${u}`; };
+  const href = (p: number) => { const u = new URLSearchParams(); Object.entries({ ...params, [pageParam]: String(p) }).forEach(([k, v]) => v && u.set(k, v)); return `${base}?${u}`; };
   return (
     <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
       <span>{total.toLocaleString()} record{total === 1 ? '' : 's'} · page {page} of {pages}</span>

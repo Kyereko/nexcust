@@ -11,6 +11,12 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `POST /auth/login` | public (rate-limited) | — | success and failure |
 | `POST /auth/logout` | session | — | yes |
 | `GET /auth/me` | session | — | — |
+| `POST /auth/invitation` | public (rate-limited); token in body | — | — |
+| `POST /auth/invitation/accept` | public (rate-limited); token in body | creates the account with its access profile | success and refusal |
+| `GET /admin/invitations`, `GET /admin/invitations/meta` | `platform.users.manage` | platform | — |
+| `POST /admin/invitations` | `platform.users.manage` | platform | yes (with email outcome) |
+| `POST /admin/invitations/:id/resend`, `/revoke` | `platform.users.manage` | platform | yes |
+| `POST /admin/users/:id/status` | `platform.users.manage` (not on own account; one active administrator always remains) | platform | yes |
 | `GET /health` | public | — | — |
 | `GET /persons?q=` | `person.read` | national, identity fields only | every search |
 | `GET /reference` | session | caller's institution | — |
@@ -100,48 +106,52 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | Prison HR Officer | PRISONS | ORG_UNIT | National HQ | prisons |
 | Auditor | — | PLATFORM | — | audit |
 | Public Applicant | — | SELF | — | applicant |
+| Tester · Police | POLICE | ORG_UNIT | National HQ | police |
+| Tester · Prisons | PRISONS | ORG_UNIT | National HQ | prisons |
 
 `ORG_UNIT` roles act only inside the organizational unit they are assigned to and everything beneath it.
 
+**Access profiles and invitations.** People are invited, never given a password. `ACCESS_PROFILES` in `packages/contracts` names the roles an invitation grants; the only profile today is **Tester**: `TESTER_POLICE` and `TESTER_PRISONS` (every operational permission of the institution at its national headquarters, plus `audit.read`) and `PUBLIC_APPLICANT`. Testers hold no `platform.*` permission and no `police.juvenile.read` (Act 653 s.3 keeps identities at the handling station). Maker–checker still applies, so a full approval cycle needs two testers. The invitation link carries a 32-byte token in the URL fragment (never sent to a server or written to request logs); only its SHA-256 is stored; it works once and expires after 72 hours; resending replaces it. Email goes through Resend when `RESEND_API_KEY` and `MAIL_FROM` are set; otherwise the administrator copies the link.
+
 ## 4. Authorization matrix (generated from `packages/contracts`)
 
-| Permission | PLATFORM ADMIN | POLICE NATIONAL ADMIN | POLICE REGIONAL COMMANDER | POLICE STATION COMMANDER | POLICE RECORDS OFFICER | POLICE HR OFFICER | BACKGROUND CHECK OFFICER | PRISONS NATIONAL ADMIN | PRISON SUPERINTENDENT | PRISON RECORDS OFFICER | PRISON HR OFFICER | AUDITOR | PUBLIC APPLICANT |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| `platform.users.manage` | ● |  |  |  |  |  |  |  |  |  |  |  |  |
-| `platform.config.manage` | ● |  |  |  |  |  |  |  |  |  |  |  |  |
-| `audit.read` | ● | ● |  |  |  |  |  | ● |  |  |  | ● |  |
-| `person.read` |  | ● | ● | ● | ● |  | ● | ● | ● | ● |  |  |  |
-| `person.write` |  |  |  |  | ● |  |  |  |  | ● |  |  |  |
-| `person.identity.amend` |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| `exchange.request` |  | ● |  |  | ● |  |  | ● |  | ● |  |  |  |
-| `police.dashboard.read` |  | ● | ● | ● | ● | ● | ● |  |  |  |  |  |  |
-| `police.custody.read` |  | ● | ● | ● | ● |  |  |  |  |  |  |  |  |
-| `police.custody.write` |  |  |  |  | ● |  |  |  |  |  |  |  |  |
-| `police.custody.close` |  | ● | ● | ● |  |  |  |  |  |  |  |  |  |
-| `police.juvenile.read` |  |  |  | ● | ● |  |  |  |  |  |  |  |  |
-| `police.case.read` |  | ● | ● | ● | ● |  | ● |  |  |  |  |  |  |
-| `police.case.write` |  |  |  |  | ● |  |  |  |  |  |  |  |  |
-| `police.personnel.read` |  | ● | ● | ● |  | ● |  |  |  |  |  |  |  |
-| `police.personnel.write` |  |  |  |  |  | ● |  |  |  |  |  |  |  |
-| `police.posting.approve` |  | ● | ● | ● |  |  |  |  |  |  |  |  |  |
-| `police.facility.read` |  | ● | ● | ● | ● | ● |  |  |  |  |  |  |  |
-| `police.bgcheck.read` |  | ● |  |  |  |  | ● |  |  |  |  |  |  |
-| `police.bgcheck.review` |  |  |  |  |  |  | ● |  |  |  |  |  |  |
-| `police.bgcheck.approve` |  | ● |  |  |  |  |  |  |  |  |  |  |  |
-| `prisons.dashboard.read` |  |  |  |  |  |  |  | ● | ● | ● | ● |  |  |
-| `prisons.prisoner.read` |  |  |  |  |  |  |  | ● | ● | ● |  |  |  |
-| `prisons.prisoner.write` |  |  |  |  |  |  |  |  |  | ● |  |  |  |
-| `prisons.transfer.initiate` |  |  |  |  |  |  |  |  |  | ● |  |  |  |
-| `prisons.transfer.approve` |  |  |  |  |  |  |  | ● | ● |  |  |  |  |
-| `prisons.release.initiate` |  |  |  |  |  |  |  |  |  | ● |  |  |  |
-| `prisons.release.approve` |  |  |  |  |  |  |  | ● | ● |  |  |  |  |
-| `prisons.personnel.read` |  |  |  |  |  |  |  | ● | ● |  | ● |  |  |
-| `prisons.personnel.write` |  |  |  |  |  |  |  |  |  |  | ● |  |  |
-| `prisons.posting.approve` |  |  |  |  |  |  |  | ● | ● |  |  |  |  |
-| `prisons.facility.read` |  |  |  |  |  |  |  | ● | ● | ● | ● |  |  |
-| `prisons.rehab.read` |  |  |  |  |  |  |  | ● | ● | ● |  |  |  |
-| `prisons.rehab.write` |  |  |  |  |  |  |  |  |  | ● |  |  |  |
-| `applicant.bgcheck.submit` |  |  |  |  |  |  |  |  |  |  |  |  | ● |
+| Permission | PLATFORM ADMIN | POLICE NATIONAL ADMIN | POLICE REGIONAL COMMANDER | POLICE STATION COMMANDER | POLICE RECORDS OFFICER | POLICE HR OFFICER | BACKGROUND CHECK OFFICER | PRISONS NATIONAL ADMIN | PRISON SUPERINTENDENT | PRISON RECORDS OFFICER | PRISON HR OFFICER | AUDITOR | PUBLIC APPLICANT | TESTER POLICE | TESTER PRISONS |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `platform.users.manage` | ● |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| `platform.config.manage` | ● |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| `audit.read` | ● | ● |  |  |  |  |  | ● |  |  |  | ● |  | ● | ● |
+| `person.read` |  | ● | ● | ● | ● |  | ● | ● | ● | ● |  |  |  | ● | ● |
+| `person.write` |  |  |  |  | ● |  |  |  |  | ● |  |  |  | ● | ● |
+| `person.identity.amend` |  |  |  |  |  |  |  |  |  |  |  |  |  | ● | ● |
+| `exchange.request` |  | ● |  |  | ● |  |  | ● |  | ● |  |  |  | ● | ● |
+| `police.dashboard.read` |  | ● | ● | ● | ● | ● | ● |  |  |  |  |  |  | ● |  |
+| `police.custody.read` |  | ● | ● | ● | ● |  |  |  |  |  |  |  |  | ● |  |
+| `police.custody.write` |  |  |  |  | ● |  |  |  |  |  |  |  |  | ● |  |
+| `police.custody.close` |  | ● | ● | ● |  |  |  |  |  |  |  |  |  | ● |  |
+| `police.juvenile.read` |  |  |  | ● | ● |  |  |  |  |  |  |  |  |  |  |
+| `police.case.read` |  | ● | ● | ● | ● |  | ● |  |  |  |  |  |  | ● |  |
+| `police.case.write` |  |  |  |  | ● |  |  |  |  |  |  |  |  | ● |  |
+| `police.personnel.read` |  | ● | ● | ● |  | ● |  |  |  |  |  |  |  | ● |  |
+| `police.personnel.write` |  |  |  |  |  | ● |  |  |  |  |  |  |  | ● |  |
+| `police.posting.approve` |  | ● | ● | ● |  |  |  |  |  |  |  |  |  | ● |  |
+| `police.facility.read` |  | ● | ● | ● | ● | ● |  |  |  |  |  |  |  | ● |  |
+| `police.bgcheck.read` |  | ● |  |  |  |  | ● |  |  |  |  |  |  | ● |  |
+| `police.bgcheck.review` |  |  |  |  |  |  | ● |  |  |  |  |  |  | ● |  |
+| `police.bgcheck.approve` |  | ● |  |  |  |  |  |  |  |  |  |  |  | ● |  |
+| `prisons.dashboard.read` |  |  |  |  |  |  |  | ● | ● | ● | ● |  |  |  | ● |
+| `prisons.prisoner.read` |  |  |  |  |  |  |  | ● | ● | ● |  |  |  |  | ● |
+| `prisons.prisoner.write` |  |  |  |  |  |  |  |  |  | ● |  |  |  |  | ● |
+| `prisons.transfer.initiate` |  |  |  |  |  |  |  |  |  | ● |  |  |  |  | ● |
+| `prisons.transfer.approve` |  |  |  |  |  |  |  | ● | ● |  |  |  |  |  | ● |
+| `prisons.release.initiate` |  |  |  |  |  |  |  |  |  | ● |  |  |  |  | ● |
+| `prisons.release.approve` |  |  |  |  |  |  |  | ● | ● |  |  |  |  |  | ● |
+| `prisons.personnel.read` |  |  |  |  |  |  |  | ● | ● |  | ● |  |  |  | ● |
+| `prisons.personnel.write` |  |  |  |  |  |  |  |  |  |  | ● |  |  |  | ● |
+| `prisons.posting.approve` |  |  |  |  |  |  |  | ● | ● |  |  |  |  |  | ● |
+| `prisons.facility.read` |  |  |  |  |  |  |  | ● | ● | ● | ● |  |  |  | ● |
+| `prisons.rehab.read` |  |  |  |  |  |  |  | ● | ● | ● |  |  |  |  | ● |
+| `prisons.rehab.write` |  |  |  |  |  |  |  |  |  | ● |  |  |  |  | ● |
+| `applicant.bgcheck.submit` |  |  |  |  |  |  |  |  |  |  |  |  | ● |  |  |
 
 ## 5. Rules every workstream must follow
 

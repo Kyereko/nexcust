@@ -5,6 +5,7 @@ import type { Permission, SessionUser } from '@nexcust/contracts';
 import { PrismaService } from '../prisma/prisma.module';
 import { AuthContext, Grant } from '../common/access';
 
+const WORKSPACE_ORDER: SessionUser['workspace'][] = ['admin', 'police', 'prisons', 'audit', 'applicant'];
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
@@ -29,12 +30,22 @@ export class AuthService {
       await this.prisma.user.update({ where: { id: user.id }, data: { failedLoginCount: failed, lockedUntil: failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MINUTES * 60_000) : null } });
       return { reason: failed >= MAX_FAILED ? 'account_locked' : 'bad_password' };
     }
+    return { token: await this.startSession(user.id, ip, userAgent), userId: user.id };
+  }
+
+  /** Opens a server-side session and returns the raw cookie token (only its SHA-256 is stored). */
+  async startSession(userId: string, ip: string, userAgent?: string): Promise<string> {
     const token = randomBytes(32).toString('base64url');
     await this.prisma.$transaction([
-      this.prisma.session.create({ data: { userId: user.id, tokenHash: sha256(token), ipAddress: ip, userAgent: userAgent?.slice(0, 250), expiresAt: new Date(Date.now() + this.ttlMs) } }),
-      this.prisma.user.update({ where: { id: user.id }, data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() } }),
+      this.prisma.session.create({ data: { userId, tokenHash: sha256(token), ipAddress: ip, userAgent: userAgent?.slice(0, 250), expiresAt: new Date(Date.now() + this.ttlMs) } }),
+      this.prisma.user.update({ where: { id: userId }, data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() } }),
     ]);
-    return { token, userId: user.id };
+    return token;
+  }
+
+  /** Ends every open session of an account (suspension, password change). */
+  async endAllSessions(userId: string) {
+    await this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
   }
 
   async logout(sessionId: string) {
@@ -58,9 +69,12 @@ export class AuthService {
       roleCode: a.role.code, institution: a.role.institution?.code ?? null, scopeLevel: a.role.scopeLevel,
       path: a.orgUnit?.path ?? null, permissions: new Set(a.role.permissions.map((p) => p.permission.code)),
     }));
+    // A person may hold roles in several workspaces (testers: Police, Prisons and the applicant portal).
+    const workspaces = [...new Set(user.roleAssignments.map((a) => a.role.workspace as SessionUser['workspace']))]
+      .sort((a, b) => WORKSPACE_ORDER.indexOf(a) - WORKSPACE_ORDER.indexOf(b));
     const sessionUser: SessionUser = {
       id: user.id, email: user.email, displayName: user.displayName,
-      workspace: (user.roleAssignments[0]?.role.workspace ?? 'applicant') as SessionUser['workspace'],
+      workspace: workspaces[0] ?? 'applicant', workspaces,
       assignments: user.roleAssignments.map((a) => ({
         roleCode: a.role.code, roleName: a.role.name, institution: a.role.institution?.code ?? null, scopeLevel: a.role.scopeLevel as 'PLATFORM' | 'ORG_UNIT' | 'SELF',
         orgUnitId: a.orgUnitId, orgUnitName: a.orgUnit?.name ?? null, orgUnitType: a.orgUnit?.type.name ?? null,

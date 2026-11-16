@@ -120,7 +120,32 @@ export const ROLES: RoleDefinition[] = [
     permissions: ['audit.read'] },
   { code: 'PUBLIC_APPLICANT', name: 'Public Applicant', institution: null, scopeLevel: 'SELF', workspace: 'applicant',
     permissions: ['applicant.bgcheck.submit'] },
+  // Testers (prototype evaluation): every operational permission of one institution, national scope, no administration.
+  // Assigned in pairs through the TESTER access profile below. Excluded on purpose:
+  //  - platform.* (administration);
+  //  - police.juvenile.read: the Juvenile Justice Act, 2003 s.3 confines identifying details to the handling station,
+  //    so testers see the protected view a national officer sees.
+  // Maker–checker still applies: a tester cannot approve their own request, so a full approval cycle needs two testers.
+  { code: 'TESTER_POLICE', name: 'Tester · Police', institution: 'POLICE', scopeLevel: 'ORG_UNIT', typicalScope: 'National HQ', workspace: 'police',
+    permissions: (Object.keys(PERMISSIONS) as Permission[]).filter((p) => p.startsWith('police.') && p !== 'police.juvenile.read')
+      .concat(['person.read', 'person.write', 'person.identity.amend', 'exchange.request', 'audit.read']) },
+  { code: 'TESTER_PRISONS', name: 'Tester · Prisons', institution: 'PRISONS', scopeLevel: 'ORG_UNIT', typicalScope: 'National HQ', workspace: 'prisons',
+    permissions: (Object.keys(PERMISSIONS) as Permission[]).filter((p) => p.startsWith('prisons.'))
+      .concat(['person.read', 'person.write', 'person.identity.amend', 'exchange.request', 'audit.read']) },
 ];
+
+/**
+ * Access profiles offered on an invitation. Each profile is a set of role assignments made when the invitation is
+ * accepted; ORG_UNIT roles are assigned at their institution's national headquarters (the root of its command tree).
+ */
+export const ACCESS_PROFILES = {
+  TESTER: {
+    name: 'Tester',
+    description: 'Everything in the Police and Prisons workspaces and the applicant portal, nationally. No administration.',
+    roles: ['TESTER_POLICE', 'TESTER_PRISONS', 'PUBLIC_APPLICANT'],
+  },
+} as const satisfies Record<string, { name: string; description: string; roles: string[] }>;
+export type AccessProfile = keyof typeof ACCESS_PROFILES;
 
 /** Shape returned by GET /api/auth/me — the contract between API and web shell. */
 export interface SessionUser {
@@ -138,6 +163,8 @@ export interface SessionUser {
     orgUnitType: string | null;
   }>;
   permissions: Permission[];
+  /** Every workspace the caller's roles open, in the order of their role assignments (first = home). */
+  workspaces: RoleDefinition['workspace'][];
 }
 
 export interface Paginated<T> {
