@@ -5,6 +5,8 @@ import { AuditService } from '../audit/audit.service';
 import { RequirePermission } from '../auth/decorators';
 import { AccessScope, AuthedRequest, inScope, unitWhere } from '../common/access';
 import { ListQuery, page, paging } from '../common/pagination';
+import { PrisonCustodyController } from './custody.controller';
+import { PrisonPostingsController } from './postings.controller';
 
 const PRISONS = { institution: { code: 'PRISONS' as const } };
 const facilityScope = (scope: AccessScope) => ({ facility: { ...PRISONS, orgUnit: unitWhere(scope) } });
@@ -36,9 +38,9 @@ export class PrisonsController {
   private async occupancy(scope: AccessScope) {
     const rows = await this.prisma.facility.findMany({ where: { ...PRISONS, orgUnit: unitWhere(scope) }, orderBy: { name: 'asc' },
       select: { id: true, code: true, name: true, capacity: true, functions: true, operationalStatus: true, isSynthetic: true, facilityType: { select: { name: true } },
-        orgUnit: { select: { parent: { select: { name: true } } } }, _count: { select: { prisonCustody: { where: { status: HELD } } } } } });
+        housingUnits: { select: { id: true, name: true, capacity: true }, orderBy: { code: 'asc' } }, orgUnit: { select: { parent: { select: { name: true } } } }, _count: { select: { prisonCustody: { where: { status: HELD } } } } } });
     return rows.map((f) => ({ id: f.id, code: f.code, name: f.name, type: f.facilityType.name, regionalCommand: f.orgUnit.parent?.name ?? null, capacity: f.capacity,
-      functions: f.functions, operationalStatus: f.operationalStatus, isSynthetic: f.isSynthetic, population: f._count.prisonCustody,
+      functions: f.functions, housingUnits: f.housingUnits, operationalStatus: f.operationalStatus, isSynthetic: f.isSynthetic, population: f._count.prisonCustody,
       occupancyRate: f.capacity ? Math.round((f._count.prisonCustody / f.capacity) * 100) : null }));
   }
 
@@ -64,7 +66,7 @@ export class PrisonsController {
   @RequirePermission('prisons.prisoner.read')
   async prisoner(@Req() req: AuthedRequest, @Param('episodeId', ParseUUIDPipe) id: string) {
     const ep = await this.prisma.prisonCustodyEpisode.findUnique({ where: { id },
-      include: { facility: { include: { orgUnit: true } }, housingUnit: true, admission: { include: { courtOrder: true } }, transfers: { include: { fromFacility: { select: { name: true } }, toFacility: { select: { name: true } } } }, release: true,
+      include: { facility: { include: { orgUnit: true, housingUnits: { orderBy: { code: 'asc' } }, rehabProgrammes: { where: { active: true }, orderBy: { name: 'asc' } } } }, housingUnit: true, admission: { include: { courtOrder: true, facility: { select: { name: true } } } }, transfers: { include: { fromFacility: { select: { name: true } }, toFacility: { select: { name: true } } } }, release: true,
         prisonerRecord: { include: { person: true, sentences: true, enrollments: { include: { programme: true } } } } } });
     if (!ep) throw new NotFoundException();
     if (!inScope(req.scope!, ep.facility.orgUnit.path)) {
@@ -91,5 +93,5 @@ export class PrisonsController {
   }
 }
 
-@Module({ controllers: [PrisonsController] })
+@Module({ controllers: [PrisonsController, PrisonCustodyController, PrisonPostingsController] })
 export class PrisonsModule {}

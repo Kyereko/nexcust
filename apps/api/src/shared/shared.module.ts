@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, Module, Post, Query, Req } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Get, Module, NotFoundException, Param, ParseUUIDPipe, Post, Query, Req } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { nextRef } from '../common/refs';
@@ -54,6 +54,15 @@ export class SharedController {
     ]);
     await this.audit.record(req, { action: 'person.search', outcome: 'SUCCESS', detail: { term, results: total } });
     return page(items, total, q);
+  }
+
+  /** Identity record by id — identity fields only. */
+  @Get('persons/:id')
+  @RequirePermission('person.read')
+  async person(@Param('id', ParseUUIDPipe) id: string) {
+    const p = await this.prisma.person.findUnique({ where: { id }, select: { id: true, indexNumber: true, surname: true, otherNames: true, sex: true, dateOfBirth: true, hometown: true, identifiers: { select: { type: true, value: true, verified: true } } } });
+    if (!p) throw new NotFoundException();
+    return p;
   }
 
   /**

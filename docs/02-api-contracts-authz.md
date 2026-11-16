@@ -4,7 +4,7 @@ Base path `/api`. Interactive documentation: `/api/docs` (OpenAPI). Authenticati
 
 Status codes: `401` no session · `403` refused (always audited) · `404` not found · `400` validation · `429` rate limit.
 
-## 1. Implemented (Days 1–2)
+## 1. Implemented (Days 1–3)
 
 | Method & path | Permission | Jurisdiction applied | Audited |
 |---|---|---|---|
@@ -37,24 +37,28 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `GET /prisons/prisoners/:episodeId` | `prisons.prisoner.read` | subtree, re-checked on the record | view and refusal |
 | `GET /prisons/facilities` | `prisons.facility.read` | unit subtree | — |
 | `GET /prisons/personnel` | `prisons.personnel.read` | unit subtree | — |
+| `GET /persons/:id` | `person.read` | national, identity only | — |
+| `GET /prisons/establishments` | `prisons.facility.read` | service-wide list (transfer targets) | — |
+| `POST /prisons/admissions` | `prisons.prisoner.write` | establishment in subtree | yes; warrant type and reference recorded |
+| `POST /prisons/prisoners/:episodeId/housing` | `prisons.prisoner.write` | subtree | yes |
+| `GET /prisons/transfers` | `prisons.prisoner.read` | sending **or** receiving establishment in subtree | — |
+| `POST /prisons/transfers` | `prisons.transfer.initiate` | prisoner held in subtree | yes |
+| `POST /prisons/transfers/:id/approve` · `/reject` | `prisons.transfer.approve` | sending establishment; not the initiator | yes; approval dispatches (IN_TRANSIT) |
+| `POST /prisons/transfers/:id/receive` | `prisons.prisoner.write` | receiving establishment | yes; prisoner moves registers |
+| `GET /prisons/releases` | `prisons.prisoner.read` | subtree | — |
+| `POST /prisons/releases` | `prisons.release.initiate` | subtree; legal authority mandatory | yes |
+| `POST /prisons/releases/:id/approve` · `/reject` | `prisons.release.approve` | subtree; not the initiator | yes; approval completes release and closes custody |
+| `GET /prisons/rehabilitation`, `POST /prisons/rehabilitation/enrollments` | `prisons.rehab.read` / `.write` | subtree; programme at the prisoner's establishment | yes |
+| `GET /prisons/personnel/:id`, `/prisons/org-units`, `/prisons/postings` and `POST /prisons/postings…` | as the police equivalents | as police | yes |
 | `GET /admin/users` | `platform.users.manage` | platform | — |
 | `GET /audit/events` | `audit.read` | all (auditor, platform) or own institution | — |
 
-## 2. Contracted for Days 3–4 (not yet implemented)
+## 2. Contracted for Day 4 (not yet implemented)
 
 Every state-changing endpoint writes an audit event. "Maker–checker" means the approver must be a different user from the initiator.
 
 | Day | Method & path | Permission | Notes |
 |---|---|---|---|
-| 3 | `POST /prisons/court-orders` | `prisons.prisoner.write` | Human-entered legal authority |
-| 3 | `POST /prisons/admissions` | `prisons.prisoner.write` | Requires verified court order; creates episode |
-| 3 | `POST /prisons/transfers` | `prisons.transfer.initiate` | From caller's establishment |
-| 3 | `POST /prisons/transfers/:id/approve` | `prisons.transfer.approve` | Maker–checker |
-| 3 | `POST /prisons/transfers/:id/receive` | `prisons.prisoner.write` at receiving establishment | Moves the episode |
-| 3 | `POST /prisons/releases` | `prisons.release.initiate` | Legal authority mandatory |
-| 3 | `POST /prisons/releases/:id/approve` | `prisons.release.approve` | Maker–checker; closes episode |
-| 3 | `POST /prisons/postings…` | as police | Mirrors police posting flow |
-| 3 | `GET/POST /prisons/rehabilitation…` | `prisons.rehab.read` / `.write` | |
 | 4 | `POST /applicant/background-checks`, `GET …/mine` | `applicant.bgcheck.submit` | Own records only |
 | 4 | `GET /police/background-checks`, `POST …/:id/advance` | `police.bgcheck.read` / `.review` | Stage transitions with findings |
 | 4 | `POST /police/background-checks/:id/decision` | `police.bgcheck.approve` | Human decision; issues sample certificate |

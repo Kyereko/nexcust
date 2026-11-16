@@ -11,11 +11,11 @@ export async function PersonnelTable({ institution, sp }: { institution: 'police
   const data = await api<Paginated<Row>>(`/${institution}/personnel${qs({ q: sp.q, page: sp.page })}`);
   return (
     <>
-      <PageHeader title="Personnel & postings" subtitle="Rank, appointment and posting are recorded separately">{institution === 'police' && <LinkButton href="/police/postings">Postings in progress</LinkButton>}</PageHeader>
+      <PageHeader title="Personnel & postings" subtitle="Rank, appointment and posting are recorded separately"><LinkButton href={`/${institution}/postings`}>Postings in progress</LinkButton></PageHeader>
       <SearchBar q={sp.q} placeholder="Search by name or service number" />
       <Table head={['Service no.', 'Name', 'Rank (substantive)', 'Appointment', 'Posting (unit)', 'Status']} empty={!data.items.length}>
         {data.items.map((r) => (
-          <tr key={r.id} className="hover:bg-slate-50"><td className="font-medium">{institution === 'police' ? <Link prefetch={false} className="text-blue-700 hover:underline" href={`/police/personnel/${r.id}`}>{r.serviceNumber}</Link> : r.serviceNumber}</td><td>{r.surname}, {r.otherNames}</td>
+          <tr key={r.id} className="hover:bg-slate-50"><td className="font-medium"><Link prefetch={false} className={`${institution === 'police' ? 'text-blue-700' : 'text-green-800'} hover:underline`} href={`/${institution}/personnel/${r.id}`}>{r.serviceNumber}</Link></td><td>{r.surname}, {r.otherNames}</td>
             <td>{r.currentRank.name}{r.currentRank.abbreviation ? <span className="text-slate-500"> ({r.currentRank.abbreviation})</span> : null}</td>
             <td>{r.commands.length ? r.commands.map((c) => `${c.acting ? 'Ag. ' : ''}${c.appointment.title}`).join(', ') : <span className="text-slate-400">—</span>}</td>
             <td>{r.currentOrgUnit.name}<div className="text-xs text-slate-500">{r.currentOrgUnit.type.name}</div></td><td><Badge>{r.status}</Badge></td></tr>

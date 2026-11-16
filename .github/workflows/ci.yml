@@ -1,0 +1,27 @@
+name: JusticeOne CI
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: justiceone, POSTGRES_PASSWORD: justiceone, POSTGRES_DB: justiceone_test }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U justiceone" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://justiceone:justiceone@localhost:5432/justiceone_test?schema=public
+      DATABASE_URL_TEST: postgresql://justiceone:justiceone@localhost:5432/justiceone_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { package_json_file: package.json }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: pnpm-lock.yaml }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm db:migrate && pnpm db:seed
+      - run: pnpm --filter @justiceone/api test

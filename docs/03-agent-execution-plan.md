@@ -26,7 +26,7 @@ Legend: ✅ done and tested · ◻ open.
 - ✅ Permission + org-unit jurisdiction guard; refusals audited; append-only audit table
 - ✅ Application shell with five workspaces, live dashboards, custody register and detail, case register, prisoner registry and detail, personnel, stations, facilities, users, audit trail, reference-data view
 - ✅ Research pack: nine documents, evidence register, 46 stakeholder questions
-- ✅ 24 API security tests, 6 browser tests (now 41 and 8 with Day 2)
+- ✅ 24 API security tests, 6 browser tests (52 and 9 after Day 3)
 
 ### Day 2 — Police workflows (complete)
 All six items delivered with API and browser tests. Not built: a station-to-station custody transfer screen (the API supports it) and linking additional persons or charges to a case from the UI.
@@ -40,14 +40,16 @@ All six items delivered with API and browser tests. Not built: a station-to-stat
 | ✅ P-05 | Posting: propose → approve → confirm | — | Current posting updates; history remains |
 | ✅ P-06 | Case create / update | — | Record creation and retrieval |
 
-### Day 3 — Prisons workflows
+### Day 3 — Prisons workflows (complete)
+All five items delivered with API and browser tests. Release dates and remission are never computed; the officer enters them from the warrant.
+
 | ID | Task | Depends on | Acceptance test |
 |---|---|---|---|
-| R-01 | Court order entry + admission | ✅ P-01 | Register prisoner: admission saved, registry updated |
-| R-02 | Transfer: initiate → approve → receive | R-01 | Both establishments reflect the transfer |
-| R-03 | Release: initiate → approve → complete | R-01 | Custody status updates with authorization history |
-| R-04 | Prison postings | P-05 pattern | As P-05 |
-| R-05 | Rehabilitation enrollments, housing assignment | R-01 | Enrollment recorded |
+| ✅ R-01 | Court order entry + admission | ✅ P-01 | Register prisoner: admission saved, registry updated |
+| ✅ R-02 | Transfer: initiate → approve → receive | ✅ R-01 | Both establishments reflect the transfer |
+| ✅ R-03 | Release: initiate → approve → complete | ✅ R-01 | Custody status updates with authorization history |
+| ✅ R-04 | Prison postings | P-05 pattern | As P-05 |
+| ✅ R-05 | Rehabilitation enrollments, housing assignment | ✅ R-01 | Enrollment recorded |
 
 ### Day 4 — Integration
 | ID | Task | Depends on | Acceptance test |
@@ -76,7 +78,9 @@ Rule: no new features after Day 3 unless required to finish a core scenario.
 | Unauthorized access denied and logged | ✅ automated (API and browser) |
 | Register detainee: saved and searchable | ✅ automated (API and browser) |
 | Police officer transfer: current posting updates, history remains | ✅ automated (API and browser) |
-| Register / transfer / release prisoner | ◻ Day 3 |
+| Register prisoner: admission saved | ✅ automated (API and browser) |
+| Transfer prisoner: both establishments reflect it | ✅ automated (API and browser) |
+| Release prisoner: status updates with authorization history | ✅ automated (API and browser) |
 | Background-check application and certificate | ◻ Day 4 |
 
 ## 4. Risks
