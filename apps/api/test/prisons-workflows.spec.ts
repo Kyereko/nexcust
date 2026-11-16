@@ -54,11 +54,15 @@ describe('Workflow D — admission', () => {
   });
   it('enrolls the prisoner in a programme offered at their establishment only', async () => {
     const a = await h.as(RECORDS);
-    const own = await h.prisma.rehabilitationProgramme.findFirstOrThrow({ where: { facilityId: ashanti } });
+    // a dedicated programme per run, so the test does not depend on earlier runs' enrollments
+    const own = await h.prisma.rehabilitationProgramme.create({ data: { facilityId: ashanti, name: `DEMO Test programme ${uniq()}`, category: 'VOCATIONAL', capacity: 1 } });
     const other = await h.prisma.rehabilitationProgramme.findFirstOrThrow({ where: { facilityId: north } });
     await a.post('/api/prisons/rehabilitation/enrollments').send({ episodeId, programmeId: other.id }).expect(400);
     await a.post('/api/prisons/rehabilitation/enrollments').send({ episodeId, programmeId: own.id }).expect(201);
-    await a.post('/api/prisons/rehabilitation/enrollments').send({ episodeId, programmeId: own.id }).expect(409);
+    await a.post('/api/prisons/rehabilitation/enrollments').send({ episodeId, programmeId: own.id }).expect(409); // already enrolled
+    const other2 = (await a.post('/api/prisons/admissions').send(remand(await newPerson())).expect(201)).body.episode.id;
+    const full = await a.post('/api/prisons/rehabilitation/enrollments').send({ episodeId: other2, programmeId: own.id }).expect(409); // capacity 1
+    expect(full.body.message).toMatch(/capacity/);
   });
 });
 
