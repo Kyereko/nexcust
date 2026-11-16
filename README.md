@@ -124,11 +124,7 @@ Starts PostgreSQL, runs migrations and the seed, then the API and web app. The c
 
 ## Deployment (demonstration environment)
 
-1. Provision PostgreSQL 16 and two containers (API, web) in an environment approved for synthetic data.
-2. Set the variables from `.env.example`; set `COOKIE_SECURE=true` and `WEB_ORIGIN` to the public HTTPS origin.
-3. Expose only the web container publicly; the API stays on the private network behind the web proxy.
-4. Run `pnpm db:migrate` then `pnpm db:seed` once.
-5. Keep the environment separate from development and never load real data.
+Hosted privately at `https://nexcust.fourthit.com` on Vercel (web + API) with a Supabase Postgres database in London. Every push to `main` deploys. Architecture, environment variables and access controls: `docs/06-hosted-demonstration.md`.
 
 ## Known limitations
 
