@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import { CLIENT_IP_HEADER, gatewayVerified } from './gateway';
 import type { Permission, SessionUser } from '@nexcust/contracts';
 
 /** One role assignment, resolved for authorization decisions. */
@@ -46,6 +47,9 @@ export function unitWhere(scope: AccessScope) {
 
 export const inScope = (scope: AccessScope, unitPath: string) => scope.all || scope.paths.some((p) => unitPath.startsWith(p));
 
+/** Caller's IP: the web tier's forwarded value when the request came through the gateway, else the socket peer. */
 export function clientIp(req: Request): string {
+  const forwarded = req.headers[CLIENT_IP_HEADER];
+  if (process.env.API_GATEWAY_SECRET && typeof forwarded === 'string' && forwarded && gatewayVerified(req)) return forwarded.slice(0, 64);
   return (req.ip ?? req.socket?.remoteAddress ?? 'unknown').replace('::ffff:', '');
 }

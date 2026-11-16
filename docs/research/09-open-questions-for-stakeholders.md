@@ -58,3 +58,47 @@ Each question can be answered by a serving officer or records clerk. Answers wil
 44. Have the Police Service and Prisons Service registered as data controllers with the Data Protection Commission, and are there internal rules for sharing prisoner or suspect data?
 45. Is there any procedure for removing or sealing a criminal record after acquittal, pardon or passage of time?
 46. Which non-custodial outcomes should be recordable today (fine, bond, plea agreement, community sentence)?
+
+## D. Added 16 November 2026 (see files 10–14)
+
+### Police clearance (CID / CDSB)
+
+47. What is the official validity period of a police clearance certificate, and where is it stated? Press reports say six months; is that counted in calendar months from the date of issue?
+48. Which office titles are registered as authorised signatories for clearance certificates, and is every certificate signed "for the Director-General, CID"? Is a second officer required to check a certificate before it is signed?
+49. Between the fingerprint appointment ("attendance") and "certificate completion" on the eServices portal, which unit searches the records (CDSB, Fingerprint Bureau, AFIS), and who decides the "criminal ident" result?
+50. Is "criminal ident" a fingerprint (AFIS) match, a name match, or both? How is a name-only result handled for Nominal Vetting on CID Form 196?
+51. What does a certificate say when the person has a record? Does it list convictions only, or also arrests, pending cases or acquittals? Are old convictions ever left off?
+52. Are fingerprints and photographs taken under Act 30 s.108 destroyed when a person is not convicted, as s.108(2) requires? Is the same done for prints taken from clearance applicants?
+53. How do employers, embassies and other receiving bodies check that a certificate is genuine today, and when will the "Authentication of Police Clearance" service go online?
+54. Are the "coming soon" services (board vetting for Bank of Ghana, Education, SEC; adoption vetting) handled offline today, by which unit, and at what fee?
+55. Which instrument fixes the clearance fees (GHS 150 / 2,000 / 2,000 / 100 plus GHS 70), and is the US$200 quoted by the London mission the same fee?
+56. Is the Ghana Card live-selfie check mandatory for every clearance type, and are applicants' biometrics retained after the certificate is issued?
+
+### Police custody
+
+57. What is the minimum rank (or appointment) that may grant police enquiry bail under Act 30 s.15(2) and s.97(1), and on what form is the bond recorded?
+58. Is the monthly return under Act 30 s.16 (persons arrested without warrant and not charged) still sent to the District Magistrate? In what format?
+59. When the 48 hours run out on a weekend or holiday, which court is used, and who at the station is responsible for watching the clock?
+60. When an arrested person is suspected of mental disorder, who arranges the assessment required within 48 hours by the Mental Health Act s.76?
+61. When a juvenile is arrested, who must be informed (parent/guardian, probation officer, Social Welfare), within what time, and is this written in Service Instructions?
+62. Is there a written rule or practice for informing an adult detainee's family of the arrest?
+63. Which dockets go to the Attorney-General's Department for advice, and at which court levels do police prosecutors appear?
+
+### Prisons
+
+64. May we see Ghana Prisons Service SOP Procedure 2.7 (Receiving Remand Prisoners), Procedure 5.9 (Receiving Convicts) and the SOP on Preparing Convict Prisoners for Discharge? Which registers do they require?
+65. What is checked at reception besides the warrant and medical fitness (identity, search, property, photographs, fingerprints)? Is the Gaoler's Receipt (Act 30 Form 22) still issued to the police escort?
+66. How is remission applied under NRCD 46 s.34 and regulation 61 of L.N. 412: who records it, who may forfeit it, and what are all the excluded categories (s.34(3)(b) and (c) are incomplete in our sources)?
+67. Who computes the earliest and latest release dates, and is the calculation checked by a second officer?
+68. Who has authority to order an inter-prison transfer (Officer-in-Charge, Regional Commander, Prisoner Movement Unit, Director-General)?
+69. Who signs a prisoner's discharge, and is the committal warrant returned to the issuing court as Act 30 s.315(3) requires?
+70. How do pardons, respites and amnesty lists under art. 72 reach each prison, and what document authorises each release?
+71. Is the Case Tracking System piloted in 2019 still in use in prisons, and which establishments use it?
+72. Has the Community Service Act 2026 commenced, what is its correct Act number, and will the Prisons Service have any role in supervising community service orders?
+
+### Data protection, hosting and procurement
+
+73. Are the Ghana Police Service and Ghana Prisons Service registered with the Data Protection Commission as data controllers, and do they rely on the s.61 crime exemption for criminal-records processing?
+74. Has any police or prisons records system been designated Critical Information Infrastructure under the Cybersecurity Act or a critical database under the Electronic Transactions Act?
+75. Is there a binding rule that government records must be hosted in Ghana (for example at the NITA National Data Centre)?
+76. Would a no-cost demonstration on synthetic data need any procurement approval, or is a memorandum of understanding enough?

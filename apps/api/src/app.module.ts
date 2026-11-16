@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { clientIp } from './common/access';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
@@ -15,6 +17,12 @@ import { ExchangeModule } from './exchange/exchange.module';
  * Modular monolith. Police and Prisons modules never import each other;
  * anything they share goes through the shared layer (auth, audit, person index, exchange).
  */
+/** Rate-limit per real client, not per proxy hop. */
+@Injectable()
+class ClientIpThrottlerGuard extends ThrottlerGuard {
+  protected override async getTracker(req: Record<string, any>): Promise<string> { return clientIp(req as never); }
+}
+
 @Module({
   imports: [
     // Per client IP (the web tier forwards the real client address). Sign-in has its own, much lower limit.
@@ -22,7 +30,7 @@ import { ExchangeModule } from './exchange/exchange.module';
     PrismaModule, AuditModule, AuthModule, SharedModule, PoliceModule, PrisonsModule, ApplicantModule, ExchangeModule,
   ],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: ClientIpThrottlerGuard },
     { provide: APP_GUARD, useClass: AccessGuard },
   ],
 })

@@ -14,6 +14,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://nexcust:nexcust@localhost:5432/nexcust_test?schema=public
       DATABASE_URL_TEST: postgresql://nexcust:nexcust@localhost:5432/nexcust_test?schema=public
+      DIRECT_URL: postgresql://nexcust:nexcust@localhost:5432/nexcust_test?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

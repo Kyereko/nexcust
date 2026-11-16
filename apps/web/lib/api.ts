@@ -28,10 +28,14 @@ export async function api<T>(path: string): Promise<T> {
  * Headers for a server-side API call: the caller's session cookie plus their real client IP,
  * so the API's rate limiting and audit trail see the end user rather than the web server.
  */
-async function forwarded(): Promise<Record<string, string>> {
+export async function forwarded(): Promise<Record<string, string>> {
   const token = (await cookies()).get(COOKIE)?.value;
   const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim();
-  return { ...(token ? { cookie: `${COOKIE}=${token}` } : {}), ...(ip ? { 'x-forwarded-for': ip } : {}) };
+  return {
+    ...(token ? { cookie: `${COOKIE}=${token}` } : {}),
+    ...(ip ? { 'x-nexcust-client-ip': ip } : {}),
+    ...(process.env.API_GATEWAY_SECRET ? { 'x-nexcust-gateway': process.env.API_GATEWAY_SECRET } : {}),
+  };
 }
 
 export interface SendResult<T> { ok: boolean; status: number; data: T | null; message: string; code?: string }

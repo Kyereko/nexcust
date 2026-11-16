@@ -1,14 +1,13 @@
 import Link from 'next/link';
 import { Wordmark } from '@/components/brand';
-import { headers } from 'next/headers';
+import { forwarded } from '@/lib/api';
 
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 const d = (v?: string | null) => (v ? new Date(v).toLocaleDateString('en-GB', { timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric' }) : '—');
 
 export default async function VerifyResult({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim();
-  const res = await fetch(`${API}/api/verify/${encodeURIComponent(code)}`, { cache: 'no-store', headers: ip ? { 'x-forwarded-for': ip } : {} });
+  const res = await fetch(`${API}/api/verify/${encodeURIComponent(code)}`, { cache: 'no-store', headers: await forwarded() });
   const r = res.ok ? await res.json() : { valid: false, message: res.status === 429 ? 'Too many checks. Please wait a minute and try again.' : 'Enter the 12-character verification code printed on the certificate.' };
   const found = 'certificateNumber' in r;
   return (
