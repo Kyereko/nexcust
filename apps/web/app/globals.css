@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0f172a;
+  --color-police: #1e3a8a;
+  --color-prisons: #14532d;
+  --color-neutralws: #334155;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body { background: #f1f5f9; color: var(--color-ink); }
+table { border-collapse: collapse; }

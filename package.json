@@ -1,0 +1,25 @@
+{
+  "name": "justiceone",
+  "private": true,
+  "version": "0.1.0",
+  "description": "JusticeOne Ghana — DEMONSTRATION prototype (synthetic data only). Not an official Ghana Police Service or Ghana Prisons Service system.",
+  "packageManager": "pnpm@10.28.0",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "pnpm --filter @justiceone/database migrate:deploy",
+    "db:seed": "pnpm --filter @justiceone/database seed",
+    "db:reset": "pnpm --filter @justiceone/database reset",
+    "e2e": "pnpm --filter @justiceone/web e2e"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "prisma", "esbuild", "sharp", "@nestjs/core", "@swc/core", "unrs-resolver"]
+  }
+}

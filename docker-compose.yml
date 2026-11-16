@@ -1,0 +1,24 @@
+# DEMONSTRATION stack — synthetic data only. Not yet verified on a Docker host (see README).
+services:
+  db:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: justiceone, POSTGRES_PASSWORD: justiceone, POSTGRES_DB: justiceone }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U justiceone"], interval: 5s, timeout: 3s, retries: 10 }
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    environment:
+      DATABASE_URL: postgresql://justiceone:justiceone@db:5432/justiceone?schema=public
+      API_PORT: "4000"
+      WEB_ORIGIN: http://localhost:3000
+      COOKIE_SECURE: "false"
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-Demo!Pass2026}
+    depends_on: { db: { condition: service_healthy } }
+    command: sh -c "pnpm db:migrate && pnpm db:seed && node apps/api/dist/main.js"
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    environment: { API_INTERNAL_URL: http://api:4000, NEXT_PUBLIC_ENV_LABEL: DEMONSTRATION }
+    ports: ["3000:3000"]
+    depends_on: [api]
+volumes:
+  pgdata:

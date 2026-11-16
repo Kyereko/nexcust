@@ -1,0 +1,1240 @@
+// JusticeOne Ghana — authoritative data contract (DEMONSTRATION prototype, synthetic data only).
+// Owner: Chief Architect / Database workstream. Changes require an approved contract change.
+//
+// Design rules
+//  * UUID primary keys, createdAt/updatedAt on mutable rows, onDelete: Restrict everywhere
+//    (criminal-justice records are never hard-deleted; they are voided with a reason).
+//  * Identity (persons) is separate from arrest, charge, conviction and custody facts.
+//  * Institutional facts (ranks, appointments, unit types, facility types, org units) are
+//    configurable REFERENCE DATA carrying a verification status and source — never hard-coded.
+//  * Rank ≠ appointment ≠ posting: three tables, three histories.
+//  * Jurisdiction is the organizational-unit tree (materialised `path`), not admin regions.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+enum InstitutionCode {
+  POLICE
+  PRISONS
+}
+
+/// Evidence status of an institutional fact (see docs/research/08-evidence-register.md)
+enum VerificationStatus {
+  VERIFIED
+  PROVISIONAL
+  UNCONFIRMED
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+enum IdentifierType {
+  GHANA_CARD
+  PASSPORT
+  DRIVERS_LICENCE
+  VOTER_ID
+  INSTITUTIONAL
+  OTHER
+}
+
+enum AuditOutcome {
+  SUCCESS
+  DENIED
+  FAILURE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum PersonnelStatus {
+  ACTIVE
+  ON_LEAVE
+  SUSPENDED
+  RETIRED
+  SEPARATED
+}
+
+enum PostingStatus {
+  PROPOSED
+  APPROVED
+  CONFIRMED
+  ENDED
+  REJECTED
+  CANCELLED
+}
+
+enum IncidentStatus {
+  REPORTED
+  UNDER_REVIEW
+  CASE_OPENED
+  CLOSED
+}
+
+enum CaseStatus {
+  OPEN
+  UNDER_INVESTIGATION
+  FORWARDED_FOR_ADVICE
+  BEFORE_COURT
+  CLOSED
+}
+
+enum CasePersonRole {
+  SUSPECT
+  COMPLAINANT
+  VICTIM
+  WITNESS
+}
+
+enum ChargeStatus {
+  PROPOSED
+  FILED
+  WITHDRAWN
+  DISMISSED
+  ACQUITTED
+  CONVICTED
+}
+
+enum PoliceCustodyStatus {
+  IN_CUSTODY
+  RELEASED_ON_BAIL
+  TRANSFERRED_TO_COURT
+  REMANDED_TO_PRISON
+  RELEASED_NO_CHARGE
+  TRANSFERRED_STATION
+  CLOSED_OTHER
+}
+
+enum CustodyMovementType {
+  CELL_ASSIGNMENT
+  STATION_TRANSFER
+  COURT_APPEARANCE
+  MEDICAL
+  RETURN
+}
+
+enum BackgroundCheckStatus {
+  SUBMITTED
+  VALIDATED
+  IDENTITY_VERIFIED
+  RECORDS_SEARCHED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CERTIFICATE_ISSUED
+  WITHDRAWN
+}
+
+enum CertificateStatus {
+  VALID
+  REVOKED
+  EXPIRED
+}
+
+enum CourtOrderType {
+  REMAND_WARRANT
+  COMMITTAL_WARRANT
+  PRODUCTION_ORDER
+  BAIL_ORDER
+  RELEASE_ORDER
+  TRANSFER_ORDER
+  OTHER
+}
+
+enum PrisonerClassification {
+  REMAND
+  CONVICTED
+  CONDEMNED
+  CIVIL
+  OTHER
+}
+
+enum PrisonCustodyStatus {
+  IN_CUSTODY
+  IN_TRANSIT
+  RELEASED
+  DECEASED
+  ESCAPED
+}
+
+enum TransferStatus {
+  INITIATED
+  APPROVED
+  IN_TRANSIT
+  RECEIVED
+  REJECTED
+  CANCELLED
+}
+
+enum ReleaseType {
+  SENTENCE_SERVED
+  BAIL
+  COURT_ORDER
+  ACQUITTAL
+  PARDON_OR_AMNESTY
+  FINE_PAID
+  OTHER
+}
+
+enum ReleaseStatus {
+  INITIATED
+  APPROVED
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  COMPLETED
+  WITHDRAWN
+}
+
+// ───────────────────────── Shared: reference & organisation ─────────────────────────
+
+model Institution {
+  id        String          @id @default(uuid()) @db.Uuid
+  code      InstitutionCode @unique
+  name      String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  orgUnitTypes  OrgUnitType[]
+  orgUnits      OrganizationalUnit[]
+  facilityTypes FacilityType[]
+  facilities    Facility[]
+  ranks         Rank[]
+  appointments  Appointment[]
+  roles         Role[]
+
+  @@map("institutions")
+}
+
+/// Administrative (geographic) regions of Ghana. Geography only — NOT a command structure.
+model Region {
+  id         String     @id @default(uuid()) @db.Uuid
+  code       String     @unique
+  name       String
+  createdAt  DateTime   @default(now())
+  facilities Facility[]
+
+  @@map("regions")
+}
+
+/// Configurable tier in a command hierarchy (e.g. NATIONAL_HQ, REGIONAL_COMMAND, DIVISION, DISTRICT, STATION).
+model OrgUnitType {
+  id                 String             @id @default(uuid()) @db.Uuid
+  institutionId      String             @db.Uuid
+  institution        Institution        @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  code               String
+  name               String
+  level              Int
+  verificationStatus VerificationStatus @default(UNCONFIRMED)
+  sourceRef          String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  units              OrganizationalUnit[]
+
+  @@unique([institutionId, code])
+  @@map("org_unit_types")
+}
+
+/// Node in an institution's command tree. `path` = "/<rootId>/.../<id>/" enables subtree scoping.
+/// Boundaries change over time: units are closed (validTo) and re-created, never deleted.
+model OrganizationalUnit {
+  id                 String               @id @default(uuid()) @db.Uuid
+  institutionId      String               @db.Uuid
+  institution        Institution          @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  typeId             String               @db.Uuid
+  type               OrgUnitType          @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  parentId           String?              @db.Uuid
+  parent             OrganizationalUnit?  @relation("OrgTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children           OrganizationalUnit[] @relation("OrgTree")
+  code               String               @unique
+  name               String
+  path               String
+  isSynthetic        Boolean              @default(true)
+  verificationStatus VerificationStatus   @default(UNCONFIRMED)
+  sourceRef          String?
+  validFrom          DateTime             @default(now())
+  validTo            DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  facilities            Facility[]
+  roleAssignments       UserRoleAssignment[]
+  policePersonnel       PolicePersonnel[]
+  policePostingsTo      PolicePosting[]           @relation("PolicePostingTo")
+  policePostingsFrom    PolicePosting[]           @relation("PolicePostingFrom")
+  policeCommands        PoliceCommandAssignment[]
+  prisonPersonnel       PrisonPersonnel[]
+  prisonPostingsTo      PrisonPosting[]           @relation("PrisonPostingTo")
+  prisonPostingsFrom    PrisonPosting[]           @relation("PrisonPostingFrom")
+  prisonCommands        PrisonCommandAssignment[]
+
+  @@index([path])
+  @@index([institutionId, typeId])
+  @@map("organizational_units")
+}
+
+/// Configurable establishment classification (e.g. police STATION/POST; prison CENTRAL/LOCAL/FEMALE/CAMP…).
+model FacilityType {
+  id                 String             @id @default(uuid()) @db.Uuid
+  institutionId      String             @db.Uuid
+  institution        Institution        @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  code               String
+  name               String
+  verificationStatus VerificationStatus @default(UNCONFIRMED)
+  sourceRef          String?
+  createdAt          DateTime           @default(now())
+  facilities         Facility[]
+
+  @@unique([institutionId, code])
+  @@map("facility_types")
+}
+
+/// Physical establishment (police station / prison) attached to exactly one org unit.
+model Facility {
+  id                String             @id @default(uuid()) @db.Uuid
+  institutionId     String             @db.Uuid
+  institution       Institution        @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  orgUnitId         String             @db.Uuid
+  orgUnit           OrganizationalUnit @relation(fields: [orgUnitId], references: [id], onDelete: Restrict)
+  facilityTypeId    String             @db.Uuid
+  facilityType      FacilityType       @relation(fields: [facilityTypeId], references: [id], onDelete: Restrict)
+  regionId          String?            @db.Uuid
+  region            Region?            @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  code              String             @unique
+  name              String
+  town              String?
+  capacity          Int?
+  functions         String[]           @default([])
+  operationalStatus String             @default("OPERATIONAL")
+  isSynthetic       Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  housingUnits        HousingUnit[]
+  incidents           PoliceIncident[]
+  cases               PoliceCase[]
+  arrests             Arrest[]
+  policeCustody       PoliceCustodyEpisode[]
+  movementsFrom       CustodyMovement[]       @relation("MovementFrom")
+  movementsTo         CustodyMovement[]       @relation("MovementTo")
+  prisonAdmissions    PrisonAdmission[]
+  prisonCustody       PrisonCustodyEpisode[]
+  transfersFrom       PrisonTransfer[]        @relation("TransferFrom")
+  transfersTo         PrisonTransfer[]        @relation("TransferTo")
+  prisonReleases      PrisonRelease[]
+  prisonIncidents     PrisonIncident[]
+  rehabProgrammes     RehabilitationProgramme[]
+
+  @@index([orgUnitId])
+  @@index([institutionId])
+  @@map("facilities")
+}
+
+model HousingUnit {
+  id         String   @id @default(uuid()) @db.Uuid
+  facilityId String   @db.Uuid
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  code       String
+  name       String
+  capacity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  prisonCustody PrisonCustodyEpisode[]
+
+  @@unique([facilityId, code])
+  @@map("housing_units")
+}
+
+/// Substantive rank (statutory). Reference data with evidence status.
+model Rank {
+  id                 String             @id @default(uuid()) @db.Uuid
+  institutionId      String             @db.Uuid
+  institution        Institution        @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  code               String
+  name               String
+  abbreviation       String?
+  /// As the source defines it: police SENIOR/JUNIOR; prisons COMMISSIONED/NON_COMMISSIONED
+  category           String
+  /// 1 = most senior
+  seniorityOrder     Int
+  verificationStatus VerificationStatus @default(PROVISIONAL)
+  sourceRef          String?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  policePersonnel   PolicePersonnel[]
+  policeRankHistory PoliceRankHistory[]
+  prisonPersonnel   PrisonPersonnel[]
+  prisonRankHistory PrisonRankHistory[]
+
+  @@unique([institutionId, code])
+  @@map("ranks")
+}
+
+/// Appointment / office (e.g. Regional Commander, Officer-in-Charge). Never inferred from rank.
+model Appointment {
+  id                 String             @id @default(uuid()) @db.Uuid
+  institutionId      String             @db.Uuid
+  institution        Institution        @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  code               String
+  title              String
+  isCommand          Boolean            @default(false)
+  verificationStatus VerificationStatus @default(UNCONFIRMED)
+  sourceRef          String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  policeCommands PoliceCommandAssignment[]
+  prisonCommands PrisonCommandAssignment[]
+
+  @@unique([institutionId, code])
+  @@map("appointments")
+}
+
+// ───────────────────────── Shared: identity & access ─────────────────────────
+
+model User {
+  id                  String     @id @default(uuid()) @db.Uuid
+  email               String     @unique
+  displayName         String
+  passwordHash        String
+  status              UserStatus @default(ACTIVE)
+  failedLoginCount    Int        @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  sessions        Session[]
+  roleAssignments UserRoleAssignment[]
+  auditEvents     AuditEvent[]
+  applications    BackgroundCheckApplication[]
+
+  @@map("users")
+}
+
+/// Server-managed session. Only the SHA-256 of the cookie token is stored.
+model Session {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Role {
+  id            String       @id @default(uuid()) @db.Uuid
+  code          String       @unique
+  name          String
+  institutionId String?      @db.Uuid
+  institution   Institution? @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  scopeLevel    String
+  workspace     String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  permissions RolePermission[]
+  assignments UserRoleAssignment[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique
+  description String
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String     @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+/// Role + jurisdiction. orgUnitId bounds the role to that unit's subtree (ABAC attribute).
+model UserRoleAssignment {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @db.Uuid
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String              @db.Uuid
+  role      Role                @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  orgUnitId String?             @db.Uuid
+  orgUnit   OrganizationalUnit? @relation(fields: [orgUnitId], references: [id], onDelete: Restrict)
+  validFrom DateTime            @default(now())
+  validTo   DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId])
+  @@map("user_role_assignments")
+}
+
+/// National Person Index — identity only. No arrest/conviction/custody facts live here.
+/// Records are linked by reviewed identifiers, never auto-merged on name similarity.
+model Person {
+  id           String    @id @default(uuid()) @db.Uuid
+  indexNumber  String    @unique
+  surname      String
+  otherNames   String
+  aliases      String[]  @default([])
+  sex          Sex       @default(UNKNOWN)
+  dateOfBirth  DateTime? @db.Date
+  dobEstimated Boolean   @default(false)
+  nationality  String?
+  hometown     String?
+  isSynthetic  Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  identifiers    PersonIdentifier[]
+  casePersons    CasePerson[]
+  arrests        Arrest[]
+  policeCustody  PoliceCustodyEpisode[]
+  convictions    ConvictionRecord[]
+  applications   BackgroundCheckApplication[]
+  prisonerRecord PrisonerRecord?
+  courtOrders    CourtOrder[]
+
+  @@index([surname, otherNames])
+  @@map("persons")
+}
+
+model PersonIdentifier {
+  id         String         @id @default(uuid()) @db.Uuid
+  personId   String         @db.Uuid
+  person     Person         @relation(fields: [personId], references: [id], onDelete: Restrict)
+  type       IdentifierType
+  value      String
+  verified   Boolean        @default(false)
+  verifiedBy String?        @db.Uuid
+  createdAt  DateTime       @default(now())
+
+  @@unique([type, value])
+  @@index([personId])
+  @@map("person_identifiers")
+}
+
+model Document {
+  id            String   @id @default(uuid()) @db.Uuid
+  ownerType     String
+  ownerId       String   @db.Uuid
+  institutionId String?  @db.Uuid
+  title         String
+  mimeType      String
+  sizeBytes     Int
+  storageKey    String
+  sha256        String
+  uploadedById  String   @db.Uuid
+  createdAt     DateTime @default(now())
+
+  @@index([ownerType, ownerId])
+  @@map("documents")
+}
+
+/// Append-only (enforced by DB trigger in the init migration).
+model AuditEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  occurredAt    DateTime     @default(now())
+  actorId       String?      @db.Uuid
+  actor         User?        @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  actorEmail    String?
+  institution   String?
+  action        String
+  outcome       AuditOutcome
+  entityType    String?
+  entityId      String?
+  permission    String?
+  ipAddress     String?
+  requestMethod String?
+  requestPath   String?
+  detail        Json?
+
+  @@index([occurredAt])
+  @@index([actorId])
+  @@index([action, outcome])
+  @@map("audit_events")
+}
+
+/// Maker–checker record for sensitive operations (release, identity amendment, certificate issue…).
+model ApprovalRequest {
+  id            String         @id @default(uuid()) @db.Uuid
+  institution   String
+  operation     String
+  entityType    String
+  entityId      String         @db.Uuid
+  status        ApprovalStatus @default(PENDING)
+  requestedById String         @db.Uuid
+  requestedAt   DateTime       @default(now())
+  decidedById   String?        @db.Uuid
+  decidedAt     DateTime?
+  reason        String?
+  payload       Json?
+
+  @@index([entityType, entityId])
+  @@index([status])
+  @@map("approval_requests")
+}
+
+/// Authorized cross-institution information exchange: every lookup has a purpose and is logged.
+model DataExchangeRequest {
+  id                   String   @id @default(uuid()) @db.Uuid
+  requestingInstitution String
+  providingInstitution String
+  personId             String   @db.Uuid
+  purpose              String
+  legalBasis           String?
+  requestedById        String   @db.Uuid
+  status               String   @default("FULFILLED")
+  disclosedSummary     Json?
+  createdAt            DateTime @default(now())
+
+  @@index([personId])
+  @@map("data_exchange_requests")
+}
+
+// ───────────────────────── Police ─────────────────────────
+
+model PolicePersonnel {
+  id               String             @id @default(uuid()) @db.Uuid
+  serviceNumber    String             @unique
+  surname          String
+  otherNames       String
+  sex              Sex                @default(UNKNOWN)
+  dateOfBirth      DateTime?          @db.Date
+  enlistmentDate   DateTime?          @db.Date
+  status           PersonnelStatus    @default(ACTIVE)
+  currentRankId    String             @db.Uuid
+  currentRank      Rank               @relation(fields: [currentRankId], references: [id], onDelete: Restrict)
+  currentOrgUnitId String             @db.Uuid
+  currentOrgUnit   OrganizationalUnit @relation(fields: [currentOrgUnitId], references: [id], onDelete: Restrict)
+  isSynthetic      Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  postings    PolicePosting[]
+  rankHistory PoliceRankHistory[]
+  commands    PoliceCommandAssignment[]
+
+  @@index([currentOrgUnitId])
+  @@map("police_personnel")
+}
+
+model PolicePosting {
+  id              String              @id @default(uuid()) @db.Uuid
+  personnelId     String              @db.Uuid
+  personnel       PolicePersonnel     @relation(fields: [personnelId], references: [id], onDelete: Restrict)
+  fromOrgUnitId   String?             @db.Uuid
+  fromOrgUnit     OrganizationalUnit? @relation("PolicePostingFrom", fields: [fromOrgUnitId], references: [id], onDelete: Restrict)
+  toOrgUnitId     String              @db.Uuid
+  toOrgUnit       OrganizationalUnit  @relation("PolicePostingTo", fields: [toOrgUnitId], references: [id], onDelete: Restrict)
+  status          PostingStatus       @default(PROPOSED)
+  reason          String?
+  initiatedById   String?             @db.Uuid
+  approvedById    String?             @db.Uuid
+  approvedAt      DateTime?
+  confirmedById   String?             @db.Uuid
+  confirmedAt     DateTime?
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([personnelId])
+  @@map("police_postings")
+}
+
+model PoliceRankHistory {
+  id            String          @id @default(uuid()) @db.Uuid
+  personnelId   String          @db.Uuid
+  personnel     PolicePersonnel @relation(fields: [personnelId], references: [id], onDelete: Restrict)
+  rankId        String          @db.Uuid
+  rank          Rank            @relation(fields: [rankId], references: [id], onDelete: Restrict)
+  effectiveFrom DateTime        @db.Date
+  effectiveTo   DateTime?       @db.Date
+  authorityRef  String?
+  createdAt     DateTime        @default(now())
+
+  @@index([personnelId])
+  @@map("police_rank_history")
+}
+
+model PoliceCommandAssignment {
+  id            String             @id @default(uuid()) @db.Uuid
+  personnelId   String             @db.Uuid
+  personnel     PolicePersonnel    @relation(fields: [personnelId], references: [id], onDelete: Restrict)
+  appointmentId String             @db.Uuid
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  orgUnitId     String             @db.Uuid
+  orgUnit       OrganizationalUnit @relation(fields: [orgUnitId], references: [id], onDelete: Restrict)
+  acting        Boolean            @default(false)
+  effectiveFrom DateTime           @db.Date
+  effectiveTo   DateTime?          @db.Date
+  authorityRef  String?
+  createdAt     DateTime           @default(now())
+
+  @@index([orgUnitId])
+  @@map("police_command_assignments")
+}
+
+model PoliceIncident {
+  id            String         @id @default(uuid()) @db.Uuid
+  reference     String         @unique
+  facilityId    String         @db.Uuid
+  facility      Facility       @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  reportedAt    DateTime
+  category      String
+  summary       String
+  location      String?
+  status        IncidentStatus @default(REPORTED)
+  recordedById  String?        @db.Uuid
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  cases         PoliceCase[]
+
+  @@index([facilityId])
+  @@map("police_incidents")
+}
+
+model PoliceCase {
+  id           String          @id @default(uuid()) @db.Uuid
+  caseNumber   String          @unique
+  facilityId   String          @db.Uuid
+  facility     Facility        @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  incidentId   String?         @db.Uuid
+  incident     PoliceIncident? @relation(fields: [incidentId], references: [id], onDelete: Restrict)
+  title        String
+  offenceCategory String
+  status       CaseStatus      @default(OPEN)
+  openedAt     DateTime
+  closedAt     DateTime?
+  investigatorId String?       @db.Uuid
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  persons     CasePerson[]
+  arrests     Arrest[]
+  charges     Charge[]
+  convictions ConvictionRecord[]
+
+  @@index([facilityId])
+  @@map("police_cases")
+}
+
+model CasePerson {
+  id        String         @id @default(uuid()) @db.Uuid
+  caseId    String         @db.Uuid
+  case      PoliceCase     @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  personId  String         @db.Uuid
+  person    Person         @relation(fields: [personId], references: [id], onDelete: Restrict)
+  role      CasePersonRole
+  createdAt DateTime       @default(now())
+
+  @@unique([caseId, personId, role])
+  @@index([personId])
+  @@map("police_case_persons")
+}
+
+/// An arrest is an event, not a finding of guilt.
+model Arrest {
+  id              String      @id @default(uuid()) @db.Uuid
+  reference       String      @unique
+  personId        String      @db.Uuid
+  person          Person      @relation(fields: [personId], references: [id], onDelete: Restrict)
+  facilityId      String      @db.Uuid
+  facility        Facility    @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  caseId          String?     @db.Uuid
+  case            PoliceCase? @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  arrestedAt      DateTime
+  location        String?
+  suspectedOffence String
+  legalAuthority  String?
+  arrestingOfficerId String?  @db.Uuid
+  recordedById    String?     @db.Uuid
+  voidedAt        DateTime?
+  voidReason      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  custodyEpisodes PoliceCustodyEpisode[]
+  charges         Charge[]
+
+  @@index([personId])
+  @@index([facilityId])
+  @@map("arrests")
+}
+
+model Charge {
+  id          String       @id @default(uuid()) @db.Uuid
+  caseId      String       @db.Uuid
+  case        PoliceCase   @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  arrestId    String?      @db.Uuid
+  arrest      Arrest?      @relation(fields: [arrestId], references: [id], onDelete: Restrict)
+  personId    String       @db.Uuid
+  offence     String
+  statuteRef  String?
+  status      ChargeStatus @default(PROPOSED)
+  filedAt     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  conviction ConvictionRecord?
+
+  @@index([personId])
+  @@map("charges")
+}
+
+/// Court outcome recorded from a court document. The ONLY basis for "has a conviction".
+model ConvictionRecord {
+  id            String      @id @default(uuid()) @db.Uuid
+  personId      String      @db.Uuid
+  person        Person      @relation(fields: [personId], references: [id], onDelete: Restrict)
+  caseId        String?     @db.Uuid
+  case          PoliceCase? @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  chargeId      String?     @unique @db.Uuid
+  charge        Charge?     @relation(fields: [chargeId], references: [id], onDelete: Restrict)
+  court         String
+  courtCaseRef  String?
+  offence       String
+  convictedAt   DateTime    @db.Date
+  sentenceSummary String?
+  sourceDocumentId String?  @db.Uuid
+  recordedById  String?     @db.Uuid
+  createdAt     DateTime    @default(now())
+
+  @@index([personId])
+  @@map("conviction_records")
+}
+
+model PoliceCustodyEpisode {
+  id               String              @id @default(uuid()) @db.Uuid
+  reference        String              @unique
+  personId         String              @db.Uuid
+  person           Person              @relation(fields: [personId], references: [id], onDelete: Restrict)
+  arrestId         String              @db.Uuid
+  arrest           Arrest              @relation(fields: [arrestId], references: [id], onDelete: Restrict)
+  facilityId       String              @db.Uuid
+  facility         Facility            @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  status           PoliceCustodyStatus @default(IN_CUSTODY)
+  detainedAt       DateTime
+  /// Deadline for production before a court (configurable rule; 48h per Constitution art. 14(3) — to be confirmed in practice)
+  courtDeadlineAt  DateTime?
+  legalAuthority   String?
+  cellRef          String?
+  openedById       String?             @db.Uuid
+  reviewedById     String?             @db.Uuid
+  reviewedAt       DateTime?
+  closedAt         DateTime?
+  closedById       String?             @db.Uuid
+  dispositionAuthorizedById String?    @db.Uuid
+  dispositionNote  String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  movements CustodyMovement[]
+
+  @@index([facilityId, status])
+  @@index([personId])
+  @@map("police_custody_episodes")
+}
+
+/// Immutable movement log.
+model CustodyMovement {
+  id             String               @id @default(uuid()) @db.Uuid
+  episodeId      String               @db.Uuid
+  episode        PoliceCustodyEpisode @relation(fields: [episodeId], references: [id], onDelete: Restrict)
+  type           CustodyMovementType
+  fromFacilityId String?              @db.Uuid
+  fromFacility   Facility?            @relation("MovementFrom", fields: [fromFacilityId], references: [id], onDelete: Restrict)
+  toFacilityId   String?              @db.Uuid
+  toFacility     Facility?            @relation("MovementTo", fields: [toFacilityId], references: [id], onDelete: Restrict)
+  occurredAt     DateTime
+  note           String?
+  recordedById   String?              @db.Uuid
+  createdAt      DateTime             @default(now())
+
+  @@index([episodeId])
+  @@map("custody_movements")
+}
+
+model BackgroundCheckApplication {
+  id              String                @id @default(uuid()) @db.Uuid
+  reference       String                @unique
+  applicantUserId String                @db.Uuid
+  applicantUser   User                  @relation(fields: [applicantUserId], references: [id], onDelete: Restrict)
+  personId        String?               @db.Uuid
+  person          Person?               @relation(fields: [personId], references: [id], onDelete: Restrict)
+  fullName        String
+  dateOfBirth     DateTime              @db.Date
+  identifierType  IdentifierType
+  identifierValue String
+  purpose         String
+  status          BackgroundCheckStatus @default(SUBMITTED)
+  submittedAt     DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  reviews     BackgroundCheckReview[]
+  certificate ClearanceCertificate?
+
+  @@index([status])
+  @@index([applicantUserId])
+  @@map("background_check_applications")
+}
+
+model BackgroundCheckReview {
+  id            String                     @id @default(uuid()) @db.Uuid
+  applicationId String                     @db.Uuid
+  application   BackgroundCheckApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  stage         BackgroundCheckStatus
+  reviewerId    String                     @db.Uuid
+  findings      Json?
+  note          String?
+  createdAt     DateTime                   @default(now())
+
+  @@index([applicationId])
+  @@map("background_check_reviews")
+}
+
+model ClearanceCertificate {
+  id               String                     @id @default(uuid()) @db.Uuid
+  applicationId    String                     @unique @db.Uuid
+  application      BackgroundCheckApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  certificateNumber String                    @unique
+  verificationCode String                     @unique
+  status           CertificateStatus          @default(VALID)
+  resultSummary    String
+  issuedById       String                     @db.Uuid
+  issuedAt         DateTime                   @default(now())
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+
+  @@map("clearance_certificates")
+}
+
+// ───────────────────────── Prisons ─────────────────────────
+
+model PrisonPersonnel {
+  id               String             @id @default(uuid()) @db.Uuid
+  serviceNumber    String             @unique
+  surname          String
+  otherNames       String
+  sex              Sex                @default(UNKNOWN)
+  dateOfBirth      DateTime?          @db.Date
+  enlistmentDate   DateTime?          @db.Date
+  status           PersonnelStatus    @default(ACTIVE)
+  currentRankId    String             @db.Uuid
+  currentRank      Rank               @relation(fields: [currentRankId], references: [id], onDelete: Restrict)
+  currentOrgUnitId String             @db.Uuid
+  currentOrgUnit   OrganizationalUnit @relation(fields: [currentOrgUnitId], references: [id], onDelete: Restrict)
+  isSynthetic      Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  postings    PrisonPosting[]
+  rankHistory PrisonRankHistory[]
+  commands    PrisonCommandAssignment[]
+
+  @@index([currentOrgUnitId])
+  @@map("prison_personnel")
+}
+
+model PrisonPosting {
+  id              String              @id @default(uuid()) @db.Uuid
+  personnelId     String              @db.Uuid
+  personnel       PrisonPersonnel     @relation(fields: [personnelId], references: [id], onDelete: Restrict)
+  fromOrgUnitId   String?             @db.Uuid
+  fromOrgUnit     OrganizationalUnit? @relation("PrisonPostingFrom", fields: [fromOrgUnitId], references: [id], onDelete: Restrict)
+  toOrgUnitId     String              @db.Uuid
+  toOrgUnit       OrganizationalUnit  @relation("PrisonPostingTo", fields: [toOrgUnitId], references: [id], onDelete: Restrict)
+  status          PostingStatus       @default(PROPOSED)
+  reason          String?
+  initiatedById   String?             @db.Uuid
+  approvedById    String?             @db.Uuid
+  approvedAt      DateTime?
+  confirmedById   String?             @db.Uuid
+  confirmedAt     DateTime?
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([personnelId])
+  @@map("prison_postings")
+}
+
+model PrisonRankHistory {
+  id            String          @id @default(uuid()) @db.Uuid
+  personnelId   String          @db.Uuid
+  personnel     PrisonPersonnel @relation(fields: [personnelId], references: [id], onDelete: Restrict)
+  rankId        String          @db.Uuid
+  rank          Rank            @relation(fields: [rankId], references: [id], onDelete: Restrict)
+  effectiveFrom DateTime        @db.Date
+  effectiveTo   DateTime?       @db.Date
+  authorityRef  String?
+  createdAt     DateTime        @default(now())
+
+  @@index([personnelId])
+  @@map("prison_rank_history")
+}
+
+model PrisonCommandAssignment {
+  id            String             @id @default(uuid()) @db.Uuid
+  personnelId   String             @db.Uuid
+  personnel     PrisonPersonnel    @relation(fields: [personnelId], references: [id], onDelete: Restrict)
+  appointmentId String             @db.Uuid
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  orgUnitId     String             @db.Uuid
+  orgUnit       OrganizationalUnit @relation(fields: [orgUnitId], references: [id], onDelete: Restrict)
+  acting        Boolean            @default(false)
+  effectiveFrom DateTime           @db.Date
+  effectiveTo   DateTime?          @db.Date
+  authorityRef  String?
+  createdAt     DateTime           @default(now())
+
+  @@index([orgUnitId])
+  @@map("prison_command_assignments")
+}
+
+/// Institutional prisoner profile: one per person, spanning all prison custody episodes.
+model PrisonerRecord {
+  id             String   @id @default(uuid()) @db.Uuid
+  prisonerNumber String   @unique
+  personId       String   @unique @db.Uuid
+  person         Person   @relation(fields: [personId], references: [id], onDelete: Restrict)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  admissions  PrisonAdmission[]
+  episodes    PrisonCustodyEpisode[]
+  sentences   SentenceRecord[]
+  enrollments RehabilitationEnrollment[]
+
+  @@map("prisoner_records")
+}
+
+/// Judicial authority for custody, transfer or release. Entered from the court document by a human.
+model CourtOrder {
+  id           String         @id @default(uuid()) @db.Uuid
+  personId     String         @db.Uuid
+  person       Person         @relation(fields: [personId], references: [id], onDelete: Restrict)
+  type         CourtOrderType
+  court        String
+  orderRef     String
+  issuedAt     DateTime       @db.Date
+  returnDate   DateTime?      @db.Date
+  details      String?
+  verifiedById String?        @db.Uuid
+  verifiedAt   DateTime?
+  documentId   String?        @db.Uuid
+  createdAt    DateTime       @default(now())
+
+  admissions PrisonAdmission[]
+  sentences  SentenceRecord[]
+  releases   PrisonRelease[]
+  transfers  PrisonTransfer[]
+
+  @@index([personId])
+  @@map("court_orders")
+}
+
+model PrisonAdmission {
+  id               String                 @id @default(uuid()) @db.Uuid
+  reference        String                 @unique
+  prisonerRecordId String                 @db.Uuid
+  prisonerRecord   PrisonerRecord         @relation(fields: [prisonerRecordId], references: [id], onDelete: Restrict)
+  facilityId       String                 @db.Uuid
+  facility         Facility               @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  courtOrderId     String                 @db.Uuid
+  courtOrder       CourtOrder             @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
+  classification   PrisonerClassification
+  admittedAt       DateTime
+  identityCheckedById String?             @db.Uuid
+  recordedById     String?                @db.Uuid
+  notes            String?
+  createdAt        DateTime               @default(now())
+
+  episode PrisonCustodyEpisode?
+
+  @@index([facilityId])
+  @@map("prison_admissions")
+}
+
+model PrisonCustodyEpisode {
+  id               String                 @id @default(uuid()) @db.Uuid
+  prisonerRecordId String                 @db.Uuid
+  prisonerRecord   PrisonerRecord         @relation(fields: [prisonerRecordId], references: [id], onDelete: Restrict)
+  admissionId      String                 @unique @db.Uuid
+  admission        PrisonAdmission        @relation(fields: [admissionId], references: [id], onDelete: Restrict)
+  /// Current holding facility (updated on completed transfer; history lives in prison_transfers)
+  facilityId       String                 @db.Uuid
+  facility         Facility               @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  housingUnitId    String?                @db.Uuid
+  housingUnit      HousingUnit?           @relation(fields: [housingUnitId], references: [id], onDelete: Restrict)
+  classification   PrisonerClassification
+  status           PrisonCustodyStatus    @default(IN_CUSTODY)
+  startedAt        DateTime
+  endedAt          DateTime?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  transfers PrisonTransfer[]
+  release   PrisonRelease?
+
+  @@index([facilityId, status])
+  @@map("prison_custody_episodes")
+}
+
+model PrisonTransfer {
+  id             String               @id @default(uuid()) @db.Uuid
+  reference      String               @unique
+  episodeId      String               @db.Uuid
+  episode        PrisonCustodyEpisode @relation(fields: [episodeId], references: [id], onDelete: Restrict)
+  fromFacilityId String               @db.Uuid
+  fromFacility   Facility             @relation("TransferFrom", fields: [fromFacilityId], references: [id], onDelete: Restrict)
+  toFacilityId   String               @db.Uuid
+  toFacility     Facility             @relation("TransferTo", fields: [toFacilityId], references: [id], onDelete: Restrict)
+  courtOrderId   String?              @db.Uuid
+  courtOrder     CourtOrder?          @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
+  reason         String
+  status         TransferStatus       @default(INITIATED)
+  initiatedById  String?              @db.Uuid
+  approvedById   String?              @db.Uuid
+  approvedAt     DateTime?
+  dispatchedAt   DateTime?
+  receivedById   String?              @db.Uuid
+  receivedAt     DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([fromFacilityId])
+  @@index([toFacilityId])
+  @@map("prison_transfers")
+}
+
+model SentenceRecord {
+  id               String         @id @default(uuid()) @db.Uuid
+  prisonerRecordId String         @db.Uuid
+  prisonerRecord   PrisonerRecord @relation(fields: [prisonerRecordId], references: [id], onDelete: Restrict)
+  courtOrderId     String         @db.Uuid
+  courtOrder       CourtOrder     @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
+  offence          String
+  sentenceText     String
+  termMonths       Int?
+  sentencedAt      DateTime       @db.Date
+  /// Dates are ENTERED by authorized staff from the warrant; the system never computes release eligibility.
+  earliestReleaseDate DateTime?   @db.Date
+  latestReleaseDate   DateTime?   @db.Date
+  recordedById     String?        @db.Uuid
+  createdAt        DateTime       @default(now())
+
+  @@index([prisonerRecordId])
+  @@map("sentence_records")
+}
+
+model PrisonRelease {
+  id            String               @id @default(uuid()) @db.Uuid
+  reference     String               @unique
+  episodeId     String               @unique @db.Uuid
+  episode       PrisonCustodyEpisode @relation(fields: [episodeId], references: [id], onDelete: Restrict)
+  facilityId    String               @db.Uuid
+  facility      Facility             @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  type          ReleaseType
+  courtOrderId  String?              @db.Uuid
+  courtOrder    CourtOrder?          @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
+  legalAuthority String
+  status        ReleaseStatus        @default(INITIATED)
+  initiatedById String?              @db.Uuid
+  approvedById  String?              @db.Uuid
+  approvedAt    DateTime?
+  releasedAt    DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([facilityId])
+  @@map("prison_releases")
+}
+
+model PrisonIncident {
+  id           String   @id @default(uuid()) @db.Uuid
+  reference    String   @unique
+  facilityId   String   @db.Uuid
+  facility     Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  occurredAt   DateTime
+  category     String
+  summary      String
+  severity     String   @default("LOW")
+  recordedById String?  @db.Uuid
+  createdAt    DateTime @default(now())
+
+  @@index([facilityId])
+  @@map("prison_incidents")
+}
+
+model RehabilitationProgramme {
+  id         String   @id @default(uuid()) @db.Uuid
+  facilityId String   @db.Uuid
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  name       String
+  category   String
+  capacity   Int?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  enrollments RehabilitationEnrollment[]
+
+  @@map("rehabilitation_programmes")
+}
+
+model RehabilitationEnrollment {
+  id               String                  @id @default(uuid()) @db.Uuid
+  programmeId      String                  @db.Uuid
+  programme        RehabilitationProgramme @relation(fields: [programmeId], references: [id], onDelete: Restrict)
+  prisonerRecordId String                  @db.Uuid
+  prisonerRecord   PrisonerRecord          @relation(fields: [prisonerRecordId], references: [id], onDelete: Restrict)
+  status           EnrollmentStatus        @default(ENROLLED)
+  enrolledAt       DateTime                @default(now())
+  completedAt      DateTime?
+  createdAt        DateTime                @default(now())
+
+  @@index([prisonerRecordId])
+  @@map("rehabilitation_enrollments")
+}
