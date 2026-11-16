@@ -294,7 +294,8 @@ async function main() {
   await syncClearanceReference();
   await prisma.auditEvent.create({ data: { action: 'system.seed', outcome: 'SUCCESS', detail: { orgUnits: units.length, facilities: facilities.length, persons: persons.length, policePersonnel: 400, prisonPersonnel: 200, register: REGISTER_REF } } });
   console.log(`Done. ${units.length} org units, ${facilities.length} facilities (${stations.length} police stations and posts, ${prisons.length} prison establishments), ${persons.length} synthetic persons, ${custody.length} police custody episodes, ${episodes.length} prison episodes.`);
-  console.log(`Seeded role accounts (password: ${SEED_PASSWORD}):`); accounts.forEach(([e, , r]) => console.log(`  ${e.padEnd(46)} ${r}`));
+  // The password is never printed: build logs are kept by the host. It is the DEMO_PASSWORD setting (default in .env.example).
+  console.log('Seeded role accounts (password: the DEMO_PASSWORD setting):'); accounts.forEach(([e, , r]) => console.log(`  ${e.padEnd(46)} ${r}`));
 }
 const ranksData: Prisma.RankCreateManyInput[] = [];
 
