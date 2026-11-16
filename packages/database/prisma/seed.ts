@@ -42,6 +42,7 @@ function name() {
 async function main() {
   if (await prisma.institution.count()) {
     await syncRbac();
+    await syncClearanceReference();
     console.log('Database already seeded — roles and permissions synchronised with @nexcust/contracts (use `pnpm db:reset` to rebuild data).');
     return;
   }
@@ -234,14 +235,30 @@ async function main() {
 
   // ── Background-check applications (internal case-processing demo; not a replacement for the official e-service) ──
   const applicant = userId['applicant@nexcust.demo'];
-  const statuses = ['SUBMITTED', 'SUBMITTED', 'VALIDATED', 'IDENTITY_VERIFIED', 'RECORDS_SEARCHED', 'UNDER_REVIEW', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'SUBMITTED'] as const;
-  await prisma.backgroundCheckApplication.createMany({ data: statuses.map((status, i) => { const p = persons[700 + i]; return { reference: `DEMO-BGC-${pad(i + 1, 5)}`, applicantUserId: applicant, personId: status === 'SUBMITTED' ? null : p.id!, fullName: `${p.otherNames} ${p.surname}`, dateOfBirth: p.dateOfBirth as Date, identifierType: 'GHANA_CARD' as const, identifierValue: `DEMO-GHA-${pad(701 + i, 9)}-0`, purpose: pick(['Employment', 'Travel / visa', 'Education']), status, submittedAt: daysAgo(10 - i) }; }) });
+  const statuses = ['SUBMITTED', 'SUBMITTED', 'PAYMENT_CONFIRMED', 'APPOINTMENT_BOOKED', 'BIOMETRICS_CAPTURED', 'RECORDS_SEARCHED', 'UNDER_REVIEW', 'UNDER_REVIEW', 'REJECTED', 'SUBMITTED'] as const;
+  await prisma.backgroundCheckApplication.createMany({ data: statuses.map((status, i) => { const p = persons[700 + i]; return { reference: `DEMO-BGC-${pad(i + 1, 5)}`, applicantUserId: applicant, personId: status === 'SUBMITTED' ? null : p.id!, fullName: `${p.otherNames} ${p.surname}`, dateOfBirth: p.dateOfBirth as Date, identifierType: 'GHANA_CARD' as const, identifierValue: `DEMO-GHA-${pad(701 + i, 9)}-0`, purpose: pick(['Employment', 'Travel / visa', 'Education']), status, submittedAt: daysAgo(10 - i), residenceAttested: true,
+    criminalIdent: ['RECORDS_SEARCHED', 'UNDER_REVIEW', 'REJECTED'].includes(status) ? 'NOT_IDENT' as const : null }; }) });
 
+  await syncClearanceReference();
   await prisma.auditEvent.create({ data: { action: 'system.seed', outcome: 'SUCCESS', detail: { persons: 1000, policePersonnel: 200, prisonPersonnel: 100 } } });
   console.log(`Done. ${units.length} org units, ${facilities.length} facilities, 1000 persons, 200+100 personnel, ${custody.length} police custody episodes, ${episodes.length} prison episodes.`);
   console.log(`Demo accounts (password: ${DEMO_PASSWORD}):`); demoUsers.forEach(([e, , r]) => console.log(`  ${e.padEnd(40)} ${r}`));
 }
 const ranksData: Prisma.RankCreateManyInput[] = [];
+
+/** Clearance service catalogue and signatory register (idempotent; runs on every deploy). */
+async function syncClearanceReference() {
+  for (const [i, t] of REF.CLEARANCE_SERVICE_TYPES.entries()) {
+    const data = { name: t.name, vettingFeeGhs: t.vettingFeeGhs, addOnFeeGhs: t.addOnFeeGhs, available: t.available, requiresFingerprints: t.requiresFingerprints, sortOrder: i,
+      verificationStatus: t.status, sourceRef: `${REF.CLEARANCE_SOURCE}${t.note ? ` — ${t.note}` : ''}` };
+    await prisma.clearanceServiceType.upsert({ where: { code: t.code }, update: data, create: { code: t.code, ...data } });
+  }
+  const signer = await prisma.user.findUnique({ where: { email: REF.CLEARANCE_SIGNATORY.email } });
+  if (signer) await prisma.authorisedSignatory.upsert({ where: { userId: signer.id }, update: { signatoryTitle: REF.CLEARANCE_SIGNATORY.signatoryTitle, signsFor: REF.CLEARANCE_SIGNATORY.signsFor },
+    create: { userId: signer.id, signatoryTitle: REF.CLEARANCE_SIGNATORY.signatoryTitle, signsFor: REF.CLEARANCE_SIGNATORY.signsFor } });
+  const ordinary = await prisma.clearanceServiceType.findUniqueOrThrow({ where: { code: 'ORDINARY_RESIDENT' } });
+  await prisma.backgroundCheckApplication.updateMany({ where: { serviceTypeId: null }, data: { serviceTypeId: ordinary.id, residenceAttested: true } });
+}
 
 /** Bring permissions and role→permission mappings in line with the contracts package (idempotent). */
 async function syncRbac() {

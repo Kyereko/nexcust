@@ -16,66 +16,97 @@ async function application(personWithConviction: boolean) {
   const p = personWithConviction ? conv.person : clean;
   const card = p.identifiers.find((i) => i.type === 'GHANA_CARD');
   return { person: p, body: { fullName: `${p.otherNames} ${p.surname}`, dateOfBirth: p.dateOfBirth!.toISOString().slice(0, 10), identifierType: 'GHANA_CARD',
-    identifierValue: card?.value ?? `DEMO-GHA-X${uniq()}`, purpose: 'Employment (test)' } };
+    identifierValue: `${card?.value ?? 'DEMO-GHA-X'}-${uniq()}`, purpose: 'Employment (test)', serviceTypeCode: 'ORDINARY_RESIDENT', residenceAttested: true, deliveryPostOffice: 'DEMO Accra Central Post Office' } };
 }
-async function process(id: string, personId: string | undefined) {
-  const o = await h.as(BGC);
-  await o.post(`/api/police/background-checks/${id}/advance`).send({ stage: 'VALIDATED', note: 'Application complete' }).expect(201);
-  await o.post(`/api/police/background-checks/${id}/advance`).send({ stage: 'IDENTITY_VERIFIED', note: 'Identity verified at appointment (demo)', personId }).expect(201);
-  const searched = (await o.post(`/api/police/background-checks/${id}/advance`).send({ stage: 'RECORDS_SEARCHED', note: 'Records searched' }).expect(201)).body;
-  await o.post(`/api/police/background-checks/${id}/advance`).send({ stage: 'UNDER_REVIEW', note: 'Recommend issue' }).expect(201);
-  return searched;
+const appointment = { appointmentAt: new Date(Date.now() + 86400_000).toISOString(), captureCentre: 'DEMO CID Headquarters capture centre' };
+/** Officer steps up to the records search; returns after RECORDS_SEARCHED. */
+async function processTo(id: string, personId: string | undefined, ident: 'IDENT' | 'NOT_IDENT' | 'NOT_RECORDED') {
+  const o = await h.as(BGC); const step = (body: object) => o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Step recorded (test)', ...body }).expect(201);
+  await step({ paymentRef: `DEMO-PAY-${uniq()}` });
+  await step(appointment);
+  await step({ personId });
+  return (await step({ criminalIdent: ident })).body;
 }
 
-describe('Workflow C — background check to verifiable certificate', () => {
+describe('Workflow C — police clearance on the eServices portal flow', () => {
   let appId: string, code: string;
-  it('applicant submits; cannot submit a duplicate; sees only their own applications', async () => {
+  it('applicant chooses an available service, attests residence and gives a delivery post office; sees fees; cannot pick an unavailable service', async () => {
     const { body } = await application(false); const a = await h.as(APPLICANT);
+    const types = (await a.get('/api/applicant/background-checks/service-types').expect(200)).body;
+    expect(types.find((t: any) => t.code === 'ORDINARY_RESIDENT')).toMatchObject({ vettingFeeGhs: 150, addOnFeeGhs: 70, available: true });
+    await a.post('/api/applicant/background-checks').send({ ...body, serviceTypeCode: 'ADOPTION' }).expect(400);
+    await a.post('/api/applicant/background-checks').send({ ...body, residenceAttested: false }).expect(400);
     const res = (await a.post('/api/applicant/background-checks').send(body).expect(201)).body;
-    appId = res.id; expect(res).toMatchObject({ status: 'SUBMITTED' }); expect(res.reference).toMatch(/^DEMO-BGC-/);
+    appId = res.id; expect(res).toMatchObject({ status: 'SUBMITTED' }); expect(res.serviceType.name).toMatch(/Ordinary Vetting/);
     await a.post('/api/applicant/background-checks').send(body).expect(409);
-    expect((await a.get('/api/applicant/background-checks').expect(200)).body.map((x: any) => x.id)).toContain(appId);
-    await a.get(`/api/police/background-checks/${appId}`).expect(403); // no internal access
+    await a.get(`/api/police/background-checks/${appId}`).expect(403);
   });
-  it('enforces the stage order and the officer\'s permissions', async () => {
+  it('officer records payment, appointment and attendance (fingerprints), then the criminal-ident result', async () => {
     const o = await h.as(BGC);
-    await o.post(`/api/police/background-checks/${appId}/advance`).send({ stage: 'RECORDS_SEARCHED', note: 'skip ahead' }).expect(409);
-    await (await h.as(POLICE_REC)).post(`/api/police/background-checks/${appId}/advance`).send({ stage: 'VALIDATED', note: 'not my role' }).expect(403);
-  });
-  it('officer validates, verifies identity against an index candidate, searches and sends for decision', async () => {
-    const o = await h.as(BGC);
-    await o.post(`/api/police/background-checks/${appId}/advance`).send({ stage: 'VALIDATED', note: 'Application complete' }).expect(201);
+    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'no ref' }).expect(400); // payment reference required
+    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Paid on Ghana.gov (test)', paymentRef: 'DEMO-PAY-1' }).expect(201);
+    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Booked', ...appointment }).expect(201);
     const detail = (await o.get(`/api/police/background-checks/${appId}`).expect(200)).body;
-    expect(detail.candidates.length).toBeGreaterThan(0);
-    await o.post(`/api/police/background-checks/${appId}/advance`).send({ stage: 'IDENTITY_VERIFIED', note: 'Ghana Card checked (demo)', personId: detail.candidates[0].id }).expect(201);
-    await o.post(`/api/police/background-checks/${appId}/advance`).send({ stage: 'RECORDS_SEARCHED', note: 'Search complete' }).expect(201);
-    const review = await h.prisma.backgroundCheckReview.findFirstOrThrow({ where: { applicationId: appId, stage: 'RECORDS_SEARCHED' } });
-    expect((review.findings as any).convictions).toEqual([]);
-    await o.post(`/api/police/background-checks/${appId}/advance`).send({ stage: 'UNDER_REVIEW', note: 'Recommend issue' }).expect(201);
-    await o.post(`/api/police/background-checks/${appId}/decision`).send({ decision: 'APPROVE', note: 'No record' }).expect(403); // reviewer lacks approval permission
+    expect(detail.nextStage).toBe('BIOMETRICS_CAPTURED');
+    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Attended; live-scan prints taken (demo)', personId: detail.candidates[0]?.id }).expect(201);
+    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Search done' }).expect(400); // ident result required
+    const searched = (await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'CDSB search done', criminalIdent: 'NOT_IDENT' }).expect(201)).body;
+    expect(searched).toMatchObject({ status: 'RECORDS_SEARCHED', criminalIdent: 'NOT_IDENT' });
+    await o.post(`/api/police/background-checks/${appId}/advance`).send({ note: 'Ready for signature' }).expect(201);
+    expect((await h.prisma.backgroundCheckApplication.findUniqueOrThrow({ where: { id: appId } })).status).toBe('UNDER_REVIEW');
+    await o.post(`/api/police/background-checks/${appId}/decision`).send({ decision: 'APPROVE' }).expect(403); // reviewer lacks signing permission
   });
-  it('a different, authorized officer approves and a certificate is issued', async () => {
-    const cert = (await (await h.as(APPROVER)).post(`/api/police/background-checks/${appId}/decision`).send({ decision: 'APPROVE', note: 'No conviction recorded (demonstration)' }).expect(201)).body;
-    code = cert.verificationCode; expect(code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/); expect(cert.certificateNumber).toMatch(/^DEMO-PCC-/);
+  it('an authorised signatory signs for the Director-General, CID; published wording; validity six calendar months', async () => {
+    const cert = (await (await h.as(APPROVER)).post(`/api/police/background-checks/${appId}/decision`).send({ decision: 'APPROVE' }).expect(201)).body;
+    code = cert.verificationCode; expect(code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    expect(cert.resultSummary).toBe('The applicant does not appear in the criminal records of the Ghana Police Service.');
+    expect(cert.signsFor).toBe('Director-General, CID');
+    const issued = new Date(cert.issuedAt), exp = new Date(cert.expiresAt); const m = (exp.getUTCFullYear() - issued.getUTCFullYear()) * 12 + exp.getUTCMonth() - issued.getUTCMonth();
+    expect(m).toBe(6);
     const mine = (await (await h.as(APPLICANT)).get(`/api/applicant/background-checks/${appId}`).expect(200)).body;
-    expect(mine.status).toBe('CERTIFICATE_ISSUED'); expect(mine.certificate.verificationCode).toBe(code);
-    expect(JSON.stringify(mine)).not.toMatch(/findings|reviews|personId/); // applicant never sees internal working
+    expect(mine.status).toBe('CERTIFICATE_ISSUED'); expect(JSON.stringify(mine)).not.toMatch(/findings|reviews|personId|criminalIdent/);
   });
-  it('anyone holding the code can verify authenticity without signing in; wrong codes fail', async () => {
+  it('dispatches via Ghana Post; anyone with the code can verify authenticity', async () => {
+    await (await h.as(BGC)).post(`/api/police/background-checks/${appId}/dispatch`).send({ deliveryPostOffice: 'DEMO Accra Central Post Office', parcelBatchNo: 'DEMO-BATCH-001' }).expect(201);
+    expect((await (await h.as(APPLICANT)).get(`/api/applicant/background-checks/${appId}`).expect(200)).body).toMatchObject({ status: 'DISPATCHED', parcelBatchNo: 'DEMO-BATCH-001' });
     const pub = request(h.app.getHttpServer());
-    const ok = (await pub.get(`/api/verify/${code.toLowerCase().replace(/-/g, '')}`).expect(200)).body;
-    expect(ok).toMatchObject({ valid: true, status: 'VALID', resultSummary: 'No conviction recorded (demonstration)', demonstration: true });
+    expect((await pub.get(`/api/verify/${code.toLowerCase().replace(/-/g, '')}`).expect(200)).body).toMatchObject({ valid: true, signsFor: 'Director-General, CID', demonstration: true });
     expect((await pub.get('/api/verify/AAAA-BBBB-CCCC').expect(200)).body.valid).toBe(false);
     await pub.get('/api/verify/short').expect(400);
   });
-  it('the search discloses court-recorded convictions only, and the reviewer cannot also decide', async () => {
+  it('an IDENT result goes to investigation; the signatory must word the result; the system never generates adverse wording', async () => {
     const { person, body } = await application(true);
-    const id = (await (await h.as(APPLICANT)).post('/api/applicant/background-checks').send({ ...body, identifierValue: `${body.identifierValue}` }).expect(201)).body.id;
-    await process(id, person.id);
-    const f = (await h.prisma.backgroundCheckReview.findFirstOrThrow({ where: { applicationId: id, stage: 'RECORDS_SEARCHED' } })).findings as any;
-    expect(f.convictions.length).toBeGreaterThan(0); expect(JSON.stringify(f)).not.toMatch(/arrest|custody|charge/i);
-    await (await h.as(APPROVER)).post(`/api/police/background-checks/${id}/decision`).send({ decision: 'REJECT', note: 'Refer applicant to records unit (test)' }).expect(201);
-    expect((await h.prisma.backgroundCheckApplication.findUniqueOrThrow({ where: { id } })).status).toBe('REJECTED');
+    const id = (await (await h.as(APPLICANT)).post('/api/applicant/background-checks').send(body).expect(201)).body.id;
+    await processTo(id, person.id, 'IDENT');
+    const o = await h.as(BGC);
+    expect((await o.get(`/api/police/background-checks/${id}`).expect(200)).body.convictions.length).toBeGreaterThan(0); // supporting evidence only
+    await o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Referred for investigation' }).expect(201);
+    expect((await h.prisma.backgroundCheckApplication.findUniqueOrThrow({ where: { id } })).status).toBe('UNDER_INVESTIGATION');
+    await o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Investigation complete' }).expect(201);
+    const s = await h.as(APPROVER);
+    await s.post(`/api/police/background-checks/${id}/decision`).send({ decision: 'APPROVE' }).expect(400);
+    await s.post(`/api/police/background-checks/${id}/decision`).send({ decision: 'REJECT', note: 'Refer applicant to CID records unit (test)' }).expect(201);
+  });
+  it('additional information can be requested and processing resumes where it stopped', async () => {
+    const { body } = await application(false);
+    const id = (await (await h.as(APPLICANT)).post('/api/applicant/background-checks').send(body).expect(201)).body.id;
+    const o = await h.as(BGC);
+    await o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Paid', paymentRef: 'DEMO-PAY-2' }).expect(201);
+    await o.post(`/api/police/background-checks/${id}/request-info`).send({ note: 'Upload a clearer passport photo (test)' }).expect(201);
+    expect((await (await h.as(APPLICANT)).get(`/api/applicant/background-checks/${id}`).expect(200)).body.status).toBe('ADDITIONAL_INFO_REQUESTED');
+    await o.post(`/api/police/background-checks/${id}/advance`).send({ note: 'Information received' }).expect(201);
+    expect((await h.prisma.backgroundCheckApplication.findUniqueOrThrow({ where: { id } })).status).toBe('PAYMENT_CONFIRMED');
+  });
+  it('only an officer on the signatory register can sign', async () => {
+    const signer = await h.prisma.user.findUniqueOrThrow({ where: { email: APPROVER } });
+    await h.prisma.authorisedSignatory.update({ where: { userId: signer.id }, data: { active: false } });
+    try {
+      const { person, body } = await application(false);
+      const id = (await (await h.as(APPLICANT)).post('/api/applicant/background-checks').send(body).expect(201)).body.id;
+      await processTo(id, person.id, 'NOT_RECORDED');
+      await (await h.as(BGC)).post(`/api/police/background-checks/${id}/advance`).send({ note: 'Ready' }).expect(201);
+      await (await h.as(APPROVER)).post(`/api/police/background-checks/${id}/decision`).send({ decision: 'APPROVE' }).expect(403);
+    } finally { await h.prisma.authorisedSignatory.update({ where: { userId: signer.id }, data: { active: true } }); }
   });
 });
 

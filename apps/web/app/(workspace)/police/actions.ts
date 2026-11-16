@@ -67,12 +67,21 @@ export async function decidePosting(f: FormData) {
 }
 
 export async function advanceBgCheck(f: FormData) {
-  const id = s(f, 'id')!; const stage = s(f, 'stage');
-  const r = await send('POST', `/police/background-checks/${id}/advance`, { stage, note: s(f, 'note'), ...(stage === 'IDENTITY_VERIFIED' ? { personId: s(f, 'personId') } : {}) });
-  redirect(back(`/police/background-checks/${id}`, r.ok ? { notice: `Recorded: ${stage?.replace(/_/g, ' ').toLowerCase()}.` } : { error: r.message }));
+  const id = s(f, 'id')!; const stage = s(f, 'stage'); const appt = s(f, 'appointmentAt');
+  const r = await send('POST', `/police/background-checks/${id}/advance`, { note: s(f, 'note'), paymentRef: s(f, 'paymentRef'), captureCentre: s(f, 'captureCentre'),
+    appointmentAt: appt ? new Date(`${appt}:00Z`).toISOString() : undefined, personId: s(f, 'personId'), criminalIdent: s(f, 'criminalIdent') });
+  redirect(back(`/police/background-checks/${id}`, r.ok ? { notice: `Recorded: ${(stage === 'RESUME' ? 'processing resumed' : stage?.replace(/_/g, ' ').toLowerCase())}.` } : { error: r.message }));
+}
+export async function requestBgInfo(f: FormData) {
+  const id = s(f, 'id')!; const r = await send('POST', `/police/background-checks/${id}/request-info`, { note: s(f, 'infoNote') });
+  redirect(back(`/police/background-checks/${id}`, r.ok ? { notice: 'Additional information requested from the applicant.' } : { error: r.message }));
 }
 export async function decideBgCheck(f: FormData) {
   const id = s(f, 'id')!; const decision = s(f, 'decision') === 'REJECT' ? 'REJECT' : 'APPROVE';
-  const r = await send('POST', `/police/background-checks/${id}/decision`, { decision, note: s(f, 'note') });
-  redirect(back(`/police/background-checks/${id}`, r.ok ? { notice: decision === 'APPROVE' ? `Certificate ${r.data.certificateNumber} issued.` : 'Application rejected.' } : { error: r.message }));
+  const r = await send('POST', `/police/background-checks/${id}/decision`, { decision, note: decision === 'REJECT' ? s(f, 'rejectReason') : s(f, 'note') });
+  redirect(back(`/police/background-checks/${id}`, r.ok ? { notice: decision === 'APPROVE' ? `Certificate ${r.data.certificateNumber} signed and issued.` : 'Application rejected.' } : { error: r.message }));
+}
+export async function dispatchBgCheck(f: FormData) {
+  const id = s(f, 'id')!; const r = await send('POST', `/police/background-checks/${id}/dispatch`, { deliveryPostOffice: s(f, 'deliveryPostOffice'), parcelBatchNo: s(f, 'parcelBatchNo') });
+  redirect(back(`/police/background-checks/${id}`, r.ok ? { notice: 'Dispatch by Ghana Post recorded.' } : { error: r.message }));
 }

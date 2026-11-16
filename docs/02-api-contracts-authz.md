@@ -52,8 +52,12 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `GET /prisons/personnel/:id`, `/prisons/org-units`, `/prisons/postings` and `POST /prisons/postings…` | as the police equivalents | as police | yes |
 | `GET /police/reports` · `GET /prisons/reports` | `police.dashboard.read` · `prisons.dashboard.read` | roll-up by regional command in subtree (own unit below regional level) | — |
 | `GET /police/background-checks`, `GET /police/background-checks/:id` | `police.bgcheck.read` | national | detail views |
-| `POST /police/background-checks/:id/advance` | `police.bgcheck.review` | stage order enforced: VALIDATED → IDENTITY_VERIFIED → RECORDS_SEARCHED → UNDER_REVIEW | yes |
-| `POST /police/background-checks/:id/decision` | `police.bgcheck.approve` | not any officer who processed the application | yes; approval issues the certificate |
+| `GET /police/background-checks/reference` | `police.bgcheck.read` | service catalogue, signatory register, parameters | — |
+| `POST /police/background-checks/:id/advance` | `police.bgcheck.review` | portal order enforced: payment → appointment → attendance → criminal ident → (investigation) → ready for signature | yes |
+| `POST /police/background-checks/:id/request-info` | `police.bgcheck.review` | any processing stage; resumes where it stopped | yes |
+| `POST /police/background-checks/:id/dispatch` | `police.bgcheck.review` | issued certificates; Ghana Post | yes |
+| `POST /police/background-checks/:id/decision` | `police.bgcheck.approve` + authorised signatory register | not any officer who processed the application; investigated records need written wording | yes; approval signs and issues the certificate |
+| `GET /applicant/background-checks/service-types` | `applicant.bgcheck.submit` | published services and fees | — |
 | `GET/POST /applicant/background-checks`, `GET /applicant/background-checks/:id` | `applicant.bgcheck.submit` | own applications only; coarse status, no internal findings | submission |
 | `GET /verify/:code` | public, 30/min per IP | returns authenticity, status and what is printed on the certificate | every check |
 | `POST /exchange/requests` | `exchange.request` | other institution only; purpose and legal basis mandatory; fixed minimal summary | yes |

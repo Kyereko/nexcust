@@ -149,8 +149,16 @@ enum CustodyMovementType {
   RETURN
 }
 
+/// Aligned to the GPS eServices portal flow (docs/research/10, C-04). VALIDATED and IDENTITY_VERIFIED are
+/// legacy values from the first prototype; current applications use the portal-aligned stages.
 enum BackgroundCheckStatus {
   SUBMITTED
+  PAYMENT_CONFIRMED
+  APPOINTMENT_BOOKED
+  BIOMETRICS_CAPTURED
+  ADDITIONAL_INFO_REQUESTED
+  UNDER_INVESTIGATION
+  DISPATCHED
   VALIDATED
   IDENTITY_VERIFIED
   RECORDS_SEARCHED
@@ -159,6 +167,13 @@ enum BackgroundCheckStatus {
   REJECTED
   CERTIFICATE_ISSUED
   WITHDRAWN
+}
+
+/// Back-office records-search result as recorded on the portal ("Criminal ident")
+enum CriminalIdent {
+  IDENT
+  NOT_IDENT
+  NOT_RECORDED
 }
 
 enum CertificateStatus {
@@ -959,20 +974,36 @@ model CustodyMovement {
 }
 
 model BackgroundCheckApplication {
-  id              String                @id @default(uuid()) @db.Uuid
-  reference       String                @unique
-  applicantUserId String                @db.Uuid
-  applicantUser   User                  @relation(fields: [applicantUserId], references: [id], onDelete: Restrict)
-  personId        String?               @db.Uuid
-  person          Person?               @relation(fields: [personId], references: [id], onDelete: Restrict)
-  fullName        String
-  dateOfBirth     DateTime              @db.Date
-  identifierType  IdentifierType
-  identifierValue String
-  purpose         String
-  status          BackgroundCheckStatus @default(SUBMITTED)
-  submittedAt     DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id                   String                 @id @default(uuid()) @db.Uuid
+  reference            String                 @unique
+  applicantUserId      String                 @db.Uuid
+  applicantUser        User                   @relation(fields: [applicantUserId], references: [id], onDelete: Restrict)
+  personId             String?                @db.Uuid
+  person               Person?                @relation(fields: [personId], references: [id], onDelete: Restrict)
+  fullName             String
+  dateOfBirth          DateTime               @db.Date
+  identifierType       IdentifierType
+  identifierValue      String
+  purpose              String
+  serviceTypeId        String?                @db.Uuid
+  serviceType          ClearanceServiceType?  @relation(fields: [serviceTypeId], references: [id], onDelete: Restrict)
+  /// Applicant attests residence in Ghana for the minimum period (portal eligibility rule)
+  residenceAttested    Boolean                @default(false)
+  paymentRef           String?
+  appointmentAt        DateTime?
+  captureCentre        String?
+  /// LIVE_SCAN_AT_CENTRE | NOT_TAKEN_NOMINAL (Nominal Vetting via representative, no fingerprints)
+  biometricCaptureMode String?
+  attendedAt           DateTime?
+  criminalIdent        CriminalIdent?
+  /// Stage to return to after ADDITIONAL_INFO_REQUESTED
+  resumeStatus         BackgroundCheckStatus?
+  deliveryPostOffice   String?
+  parcelBatchNo        String?
+  dispatchedAt         DateTime?
+  status               BackgroundCheckStatus  @default(SUBMITTED)
+  submittedAt          DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
 
   reviews     BackgroundCheckReview[]
   certificate ClearanceCertificate?
@@ -996,6 +1027,40 @@ model BackgroundCheckReview {
   @@map("background_check_reviews")
 }
 
+/// Clearance service catalogue as published on the eServices portal. Fees are displayed only; NEXCUST takes no payment.
+model ClearanceServiceType {
+  id                   String             @id @default(uuid()) @db.Uuid
+  code                 String             @unique
+  name                 String
+  vettingFeeGhs        Int
+  addOnFeeGhs          Int
+  available            Boolean            @default(true)
+  requiresFingerprints Boolean            @default(true)
+  sortOrder            Int                @default(0)
+  verificationStatus   VerificationStatus @default(UNCONFIRMED)
+  sourceRef            String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  applications BackgroundCheckApplication[]
+
+  @@map("clearance_service_types")
+}
+
+/// Register of officers authorised to sign clearance certificates (portal "Authorized signatures").
+model AuthorisedSignatory {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @unique @db.Uuid
+  signatoryTitle String
+  signsFor       String
+  active         Boolean  @default(true)
+  timesUsed      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("authorised_signatories")
+}
+
 model ClearanceCertificate {
   id                String                     @id @default(uuid()) @db.Uuid
   applicationId     String                     @unique @db.Uuid
@@ -1005,6 +1070,9 @@ model ClearanceCertificate {
   status            CertificateStatus          @default(VALID)
   resultSummary     String
   issuedById        String                     @db.Uuid
+  /// Signed by an authorised signatory "for" the Director-General, CID (docs/research/10, C-07)
+  signatoryTitle    String?
+  signsFor          String?
   issuedAt          DateTime                   @default(now())
   expiresAt         DateTime?
   revokedAt         DateTime?

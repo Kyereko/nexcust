@@ -100,3 +100,22 @@ export const POLICE_REGIONAL_COMMANDS = ['Accra', 'Tema', 'Ashanti', 'Ashanti No
 
 /** Prisons regional commands used for the demo tree (subset seen on ghanaprisons.gov.gh). */
 export const PRISON_REGIONAL_COMMANDS_DEMO = ['Ashanti', 'Northern', 'Western'];
+
+/**
+ * Police clearance service catalogue as published on eservices.police.gov.gh (read 16 Nov 2026, docs/research/10 C-01/C-02).
+ * Fees in GHS; add-on = "Passport Photo and Certificate Delivery fee". Display only — NEXCUST takes no payment.
+ */
+export const CLEARANCE_SERVICE_TYPES: Array<{ code: string; name: string; vettingFeeGhs: number; addOnFeeGhs: number; available: boolean; requiresFingerprints: boolean; status: S; note?: string }> = [
+  { code: 'ORDINARY_RESIDENT', name: 'Ordinary Vetting or Immigration Permit (Resident)', vettingFeeGhs: 150, addOnFeeGhs: 70, available: true, requiresFingerprints: true, status: 'VERIFIED' },
+  { code: 'ORDINARY_NON_RESIDENT', name: 'Ordinary Vetting or Immigration Permit (Non-Resident)', vettingFeeGhs: 2000, addOnFeeGhs: 70, available: true, requiresFingerprints: true, status: 'VERIFIED' },
+  { code: 'NOMINAL_NON_RESIDENT', name: 'Nominal Vetting (Non-Resident)', vettingFeeGhs: 2000, addOnFeeGhs: 70, available: true, requiresFingerprints: false, status: 'VERIFIED', note: 'Via a representative on CID Form 196, without fingerprints' },
+  { code: 'EMPLOYMENT', name: 'Employment Vetting', vettingFeeGhs: 100, addOnFeeGhs: 70, available: true, requiresFingerprints: true, status: 'VERIFIED' },
+  { code: 'AUTHENTICATION', name: 'Authentication of Police Clearance', vettingFeeGhs: 50, addOnFeeGhs: 0, available: false, requiresFingerprints: false, status: 'VERIFIED', note: 'Listed as "coming soon" online' },
+  { code: 'BOARD_BOG', name: 'Vetting Board of Directors (Bank of Ghana)', vettingFeeGhs: 0, addOnFeeGhs: 0, available: false, requiresFingerprints: true, status: 'VERIFIED', note: 'Coming soon; fee not published' },
+  { code: 'BOARD_EDUCATION', name: 'Vetting Board of Directors (Education)', vettingFeeGhs: 0, addOnFeeGhs: 0, available: false, requiresFingerprints: true, status: 'VERIFIED', note: 'Coming soon; fee not published' },
+  { code: 'BOARD_SEC', name: 'Vetting Board of Directors (SEC)', vettingFeeGhs: 0, addOnFeeGhs: 0, available: false, requiresFingerprints: true, status: 'VERIFIED', note: 'Coming soon; fee not published' },
+  { code: 'ADOPTION', name: 'Adoption Vetting', vettingFeeGhs: 0, addOnFeeGhs: 0, available: false, requiresFingerprints: true, status: 'VERIFIED', note: 'Coming soon; fee not published' },
+];
+export const CLEARANCE_SOURCE = 'eservices.police.gov.gh (public portal, read 16 Nov 2026)';
+/** Demo signatory. Title PROVISIONAL (press, Apr 2026); "for: Director-General, CID" to be confirmed with CID. */
+export const CLEARANCE_SIGNATORY = { email: 'police.national@nexcust.demo', signatoryTitle: 'Director in charge of Administration, CID (demonstration)', signsFor: 'Director-General, CID' };

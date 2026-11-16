@@ -64,7 +64,7 @@ Delivered with API and browser tests, plus the NEXCUST rename and brand identity
 ### Day 5 — Ghana alignment, hosting and demonstration
 - ✅ Process research (docs/research 10–14) and alignment stage 1: custody (rights at arrest, 48 h from arrest, bail bond, juveniles) and prisons (Act 30 warrant forms, gaoler's receipt, remand-warrant expiry, remission, release types, warrant return)
 - ✅ Hosted private demonstration on Vercel + Supabase (docs/06)
-- ◻ Alignment stage 2: police clearance on the eServices portal flow
+- ✅ Alignment stage 2: police clearance on the eServices portal flow (service catalogue and fees, portal stages, criminal ident, signatory register, 6-month validity, Ghana Post dispatch)
 - ◻ Full browser run of all twelve acceptance scenarios
 - ◻ Container build verified, demonstration environment deployed over HTTPS
 - ◻ Ghana-context walkthrough against the open-questions list

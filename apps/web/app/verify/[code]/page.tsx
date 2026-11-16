@@ -26,10 +26,11 @@ export default async function VerifyResult({ params }: { params: Promise<{ code:
             <div><dt className="text-xs uppercase text-slate-500">Issued</dt><dd>{d(r.issuedAt)}</dd></div>
             <div><dt className="text-xs uppercase text-slate-500">Valid until</dt><dd>{d(r.expiresAt)}</dd></div>
             <div className="col-span-2"><dt className="text-xs uppercase text-slate-500">Result</dt><dd>{r.resultSummary}</dd></div>
+            {r.signsFor && <div className="col-span-2"><dt className="text-xs uppercase text-slate-500">Signed</dt><dd>{r.signatoryTitle} — for: {r.signsFor}</dd></div>}
           </dl>
         )}
       </div>
-      <p className="mt-4 text-xs text-slate-500">This prototype holds synthetic data only. A real police clearance certificate can only be verified through the Ghana Police Service.</p>
+      <p className="mt-4 text-xs text-slate-500">Online verification is a NEXCUST demonstration feature; the Ghana Police Service offers a separate &ldquo;Authentication of Police Clearance&rdquo; service. This prototype holds synthetic data only. A real police clearance certificate can only be verified through the Ghana Police Service.</p>
       <Link href="/verify" className="mt-6 inline-block text-sm underline">Verify another code</Link>
     </main>
   );

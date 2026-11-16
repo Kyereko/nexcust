@@ -6,7 +6,7 @@ Integrated police and prisons records management for Ghana. Powered by Fourth IT
 
 > **DEMONSTRATION ONLY.** Synthetic data. This is not an official system of the Ghana Police Service or the Ghana Prisons Service, holds no real records, and is not connected to any government system.
 
-## What works today (Day 4 of 5)
+## What works today
 
 - Sign-in with server-side sessions; 15 demonstration accounts across 13 roles
 - Police and Prisons workspaces with live dashboards from the database
@@ -16,10 +16,11 @@ Integrated police and prisons records management for Ghana. Powered by Fourth IT
 - Ghana institutional reference data (ranks, appointments, unit types) with evidence status
 - Police workflows: person search and registration with duplicate review, arrest and custody through to authorized closure, case management, officer posting (propose → approve → confirm)
 - Prisons workflows: admission against a verified warrant, transfer (initiate → approve and dispatch → receiving establishment confirms), release (initiate → second officer authorizes), housing, rehabilitation enrollment, officer postings
-- Background checks: applicant submission, staged review, decision by a second officer, sample certificate, public verification at `/verify`
+- Police clearance modelled on the Ghana Police Service eServices portal: published services and fees, payment, fingerprint appointment and attendance, criminal ident, investigation, signature by an authorised signatory for the Director-General, CID, six-month validity, Ghana Post dispatch, verification at `/verify` (demonstration feature)
+- Ghana legal alignment: rights information at arrest, 48-hour clock from arrest, police enquiry bail bonds, juveniles, Act 30 warrant forms, remand-warrant expiry flags, remission entries, release types and warrant return (see `docs/research/14`)
 - Authorized exchange between police and prisons (purpose and legal basis recorded)
 - Reports rolled up by regional command with monthly trends
-- 63 API tests and 12 browser tests
+- 72 API tests and 12 browser tests
 
 Day 5 (hardening, deployment, demonstration pack) remains: see `docs/03-agent-execution-plan.md`.
 

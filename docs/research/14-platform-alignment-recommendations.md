@@ -157,4 +157,16 @@ Source short keys: **ES** = eservices.police.gov.gh public client bundle (16 Nov
 | P-05 | Done | Remand next court date required; renewals recorded; expired / expiring / over-limit warrants flagged on a dedicated page and dashboard; never auto-release |
 | P-07 | Partial | Sentence start date, officer-determined remission eligibility, forfeiture log by an authorizing officer; no computed release date; indicative calculator not built (off by default per recommendation) |
 | P-08 | Partial | Release types split (s.98 bail order, discharge warrant, end of sentence with remission, art. 72 pardon free/conditional, remission of punishment, amnesty); Discharge Board flag; warrant returned to court after release |
-| C-01 … C-14 | Next | Clearance re-modelled on the eServices portal flow (stage 2) |
+| C-01, C-02 | Done | Service catalogue (4 live, 5 "coming soon") with published fees, display only; reference table, synced on deploy |
+| C-03 | Done | Residence eligibility attestation required to apply |
+| C-04 | Done | Portal stages: submitted → payment confirmed → appointment booked → attended → criminal ident → (under investigation) → ready for signature → completed → dispatched; additional information requested with resume |
+| C-05 | Partial | Appointment, capture centre, attendance and capture mode (Nominal Vetting without fingerprints); Ghana Card check is text only (never calls NIA) |
+| C-06 | Done | Criminal ident (Ident / Not ident / Not recorded) entered by the records officer; Ident routes to investigation; NEXCUST convictions shown as supporting evidence only |
+| C-07 | Done | Authorised signatory register; certificate stores signatory title and "for: Director-General, CID"; processor cannot sign (NEXCUST control) |
+| C-08 | Done | Clean wording template; adverse wording must be written by the signatory — never generated |
+| C-09 | Done | `CERTIFICATE_VALIDITY_MONTHS = 6` (calendar months) with the receiving-body caveat |
+| C-10 | Done | Verification code labelled a NEXCUST demonstration feature; foreign-use attestation checklist shown; Authentication service listed in the catalogue |
+| C-11 | Partial | Ghana Post delivery post office, parcel batch number, dispatch date; tracking events not modelled |
+| C-12 | Done | Business-day counter against an 8-day target (amber from 6); public holidays not modelled |
+| C-13 | Not built | Extended applicant fields (physical description, parents, schools) |
+| C-14 | Done | Module labelled as complementing the official eServices portal |

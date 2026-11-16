@@ -1,7 +1,7 @@
 import { BadRequestException, Body, ConflictException, Controller, Get, Module, NotFoundException, Param, ParseUUIDPipe, Post, Req } from '@nestjs/common';
 import { ApiProperty, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { IsDateString, IsIn, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.module';
 import { AuditService } from '../audit/audit.service';
 import { Public, RequirePermission } from '../auth/decorators';
@@ -15,11 +15,16 @@ class ApplyDto {
   @ApiProperty({ enum: ID_TYPES }) @IsIn(ID_TYPES as unknown as string[]) identifierType: (typeof ID_TYPES)[number];
   @ApiProperty() @IsString() @MinLength(4) @MaxLength(40) identifierValue: string;
   @ApiProperty() @IsString() @MinLength(3) @MaxLength(120) purpose: string;
+  @ApiProperty({ description: 'Code of an available clearance service type' }) @IsString() @MaxLength(40) serviceTypeCode: string;
+  @ApiProperty({ description: 'Applicant confirms the residence eligibility rule' }) @IsBoolean() residenceAttested: boolean;
+  @ApiProperty({ description: 'Ghana Post office for delivery' }) @IsString() @MinLength(3) @MaxLength(120) deliveryPostOffice: string;
 }
-const ACTIVE = ['SUBMITTED', 'VALIDATED', 'IDENTITY_VERIFIED', 'RECORDS_SEARCHED', 'UNDER_REVIEW', 'APPROVED'] as const;
+const ACTIVE = ['SUBMITTED', 'PAYMENT_CONFIRMED', 'APPOINTMENT_BOOKED', 'BIOMETRICS_CAPTURED', 'ADDITIONAL_INFO_REQUESTED', 'UNDER_INVESTIGATION',
+  'VALIDATED', 'IDENTITY_VERIFIED', 'RECORDS_SEARCHED', 'UNDER_REVIEW', 'APPROVED'] as const;
 /** What an applicant may see of their own application: status and certificate, never internal findings. */
 const APPLICANT_VIEW = { id: true, reference: true, fullName: true, dateOfBirth: true, identifierType: true, purpose: true, status: true, submittedAt: true, updatedAt: true,
-  certificate: { select: { id: true, certificateNumber: true, verificationCode: true, status: true, resultSummary: true, issuedAt: true, expiresAt: true } } } as const;
+  appointmentAt: true, captureCentre: true, deliveryPostOffice: true, parcelBatchNo: true, dispatchedAt: true, serviceType: { select: { name: true, vettingFeeGhs: true, addOnFeeGhs: true } },
+  certificate: { select: { id: true, certificateNumber: true, verificationCode: true, status: true, resultSummary: true, issuedAt: true, expiresAt: true, signatoryTitle: true, signsFor: true } } } as const;
 
 /** Public applicant channel. Isolated from every internal record; scoped to the signed-in applicant's own data. */
 @ApiTags('applicant')
@@ -31,6 +36,13 @@ export class ApplicantController {
   @RequirePermission('applicant.bgcheck.submit')
   mine(@Req() req: AuthedRequest) {
     return this.prisma.backgroundCheckApplication.findMany({ where: { applicantUserId: req.auth!.user.id }, orderBy: { submittedAt: 'desc' }, select: APPLICANT_VIEW });
+  }
+
+  /** Services currently open for applications, with the published fees (display only). */
+  @Get('service-types')
+  @RequirePermission('applicant.bgcheck.submit')
+  serviceTypes() {
+    return this.prisma.clearanceServiceType.findMany({ orderBy: { sortOrder: 'asc' }, select: { code: true, name: true, vettingFeeGhs: true, addOnFeeGhs: true, available: true, requiresFingerprints: true } });
   }
 
   @Get(':id')
@@ -45,12 +57,16 @@ export class ApplicantController {
   @RequirePermission('applicant.bgcheck.submit')
   @Throttle({ default: { limit: 10, ttl: 3600_000 } })
   async apply(@Req() req: AuthedRequest, @Body() dto: ApplyDto) {
+    const service = await this.prisma.clearanceServiceType.findUnique({ where: { code: dto.serviceTypeCode } });
+    if (!service || !service.available) throw new BadRequestException('Choose a clearance service that is currently available');
+    if (!dto.residenceAttested) throw new BadRequestException('Applicants must meet the residence rule (resident in Ghana for over 3 months after more than 6 months abroad)');
     const dob = new Date(dto.dateOfBirth);
     if (dob.getTime() > Date.now() - 16 * 365.25 * 86400_000) throw new BadRequestException('Applicant must be at least 16 years old (demonstration rule)');
     if (await this.prisma.backgroundCheckApplication.count({ where: { applicantUserId: req.auth!.user.id, identifierValue: dto.identifierValue.trim(), status: { in: [...ACTIVE] } } }))
       throw new ConflictException('You already have an application in progress for this identity document');
     const a = await this.prisma.backgroundCheckApplication.create({ data: { reference: await nextRef(this.prisma, 'bgcheck', 'BGC'), applicantUserId: req.auth!.user.id,
-      fullName: dto.fullName.trim(), dateOfBirth: dob, identifierType: dto.identifierType, identifierValue: dto.identifierValue.trim(), purpose: dto.purpose.trim() }, select: APPLICANT_VIEW });
+      fullName: dto.fullName.trim(), dateOfBirth: dob, identifierType: dto.identifierType, identifierValue: dto.identifierValue.trim(), purpose: dto.purpose.trim(),
+      serviceTypeId: service.id, residenceAttested: true, deliveryPostOffice: dto.deliveryPostOffice.trim() }, select: APPLICANT_VIEW });
     await this.audit.record(req, { action: 'applicant.bgcheck.submit', outcome: 'SUCCESS', entityType: 'background_check_application', entityId: a.id });
     return a;
   }
@@ -77,7 +93,7 @@ export class VerifyController {
     const expired = !!c.expiresAt && c.expiresAt < new Date();
     const status = c.status === 'VALID' && expired ? 'EXPIRED' : c.status;
     return { valid: status === 'VALID', status, certificateNumber: c.certificateNumber, holderName: c.application.fullName, dateOfBirth: c.application.dateOfBirth,
-      purpose: c.application.purpose, resultSummary: c.resultSummary, issuedAt: c.issuedAt, expiresAt: c.expiresAt, demonstration: true };
+      purpose: c.application.purpose, resultSummary: c.resultSummary, issuedAt: c.issuedAt, expiresAt: c.expiresAt, signatoryTitle: c.signatoryTitle, signsFor: c.signsFor, demonstration: true };
   }
 }
 
