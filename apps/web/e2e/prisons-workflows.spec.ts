@@ -13,7 +13,7 @@ async function signOut(page: Page) { await page.getByRole('button', { name: 'Sig
 test('Workflows D and E — admit, transfer between establishments, then release with authorization', async ({ page }) => {
   const surname = `Edwee${Date.now()}`;
   // D: admission by the Ashanti records officer
-  await signIn(page, 'prisons.records@justiceone.demo');
+  await signIn(page, 'prisons.records@nexcust.demo');
   await page.getByRole('link', { name: 'Admissions & Custody', exact: true }).click();
   await page.getByRole('link', { name: 'Register new person' }).click();
   await page.getByLabel('Surname').fill(surname);
@@ -41,13 +41,13 @@ test('Workflows D and E — admit, transfer between establishments, then release
   await expect(page.getByRole('status').filter({ hasText: 'Transfer DEMO-TRF-' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'prisons.superintendent@justiceone.demo');
+  await signIn(page, 'prisons.superintendent@nexcust.demo');
   await page.getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).getByRole('button', { name: 'Approve & dispatch' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'in transit' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'prisons.records.north@justiceone.demo');
+  await signIn(page, 'prisons.records.north@nexcust.demo');
   await page.getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).getByRole('button', { name: 'Confirm arrival' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Arrival confirmed' })).toBeVisible();
@@ -59,12 +59,12 @@ test('Workflows D and E — admit, transfer between establishments, then release
   await signOut(page);
 
   // the sending establishment no longer holds the prisoner
-  await signIn(page, 'prisons.records@justiceone.demo');
+  await signIn(page, 'prisons.records@nexcust.demo');
   await page.goto(prisonerUrl);
   await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'prisons.national@justiceone.demo');
+  await signIn(page, 'prisons.national@nexcust.demo');
   await page.getByRole('link', { name: 'Transfers & Releases', exact: true }).click();
   await page.getByRole('row').filter({ hasText: surname }).filter({ hasText: 'BAIL' }).getByRole('button', { name: 'Authorize release' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Release authorized' })).toBeVisible();

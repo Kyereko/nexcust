@@ -11,7 +11,7 @@ export default async function Officer({ params, searchParams }: { params: Promis
   const pending = p.postings.find((x: any) => ['PROPOSED', 'APPROVED'].includes(x.status));
   return (
     <>
-      <Link href="/police/personnel" className="text-sm text-blue-700 hover:underline">← Personnel & postings</Link>
+      <Link href="/police/personnel" className="text-sm text-brand hover:underline">← Personnel & postings</Link>
       <PageHeader title={`${p.surname}, ${p.otherNames}`} subtitle={`Service no. ${p.serviceNumber}`}><Badge>{p.status}</Badge></PageHeader>
       <Flash sp={sp} />
       <Card className="p-5"><dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -30,7 +30,7 @@ export default async function Officer({ params, searchParams }: { params: Promis
       </Table>
       {canPost && (
         <Card className="mt-6 p-5"><h2 className="mb-1 font-semibold">Initiate posting change</h2>
-          {pending ? <p className="text-sm text-slate-600">A posting to <b>{pending.toOrgUnit.name}</b> is already in progress (<Link className="text-blue-700 hover:underline" href="/police/postings">view</Link>).</p> : (
+          {pending ? <p className="text-sm text-slate-600">A posting to <b>{pending.toOrgUnit.name}</b> is already in progress (<Link className="text-brand hover:underline" href="/police/postings">view</Link>).</p> : (
             <form action={proposePosting} className="mt-3 grid gap-4 md:grid-cols-2"><input type="hidden" name="personnelId" value={p.id} />
               <Label text="Destination unit"><select name="toOrgUnitId" required className={inputCls}>{units.filter((u) => u.id !== p.currentOrgUnitId).map((u) => <option key={u.id} value={u.id}>{u.name} — {u.type.name}</option>)}</select></Label>
               <Label text="Reason"><input name="reason" required minLength={5} maxLength={500} className={inputCls} /></Label>

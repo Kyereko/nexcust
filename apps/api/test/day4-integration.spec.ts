@@ -3,8 +3,8 @@ import request from 'supertest';
 import { startApp } from './harness';
 
 let h: Awaited<ReturnType<typeof startApp>>;
-const APPLICANT = 'applicant@justiceone.demo', BGC = 'police.bgcheck@justiceone.demo', APPROVER = 'police.national@justiceone.demo';
-const POLICE_REC = 'police.records@justiceone.demo', PRISON_REC = 'prisons.records@justiceone.demo';
+const APPLICANT = 'applicant@nexcust.demo', BGC = 'police.bgcheck@nexcust.demo', APPROVER = 'police.national@nexcust.demo';
+const POLICE_REC = 'police.records@nexcust.demo', PRISON_REC = 'prisons.records@nexcust.demo';
 const uniq = () => `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
 
 beforeAll(async () => { h = await startApp(); });
@@ -98,7 +98,7 @@ describe('authorized exchange between institutions', () => {
     expect(r.disclosedSummary.currentlyInPrisonCustody).toBe(true); expect(JSON.stringify(r.disclosedSummary)).not.toMatch(/sentence|offence/i);
     await p.post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'POLICE', purpose: 'Own institution request', legalBasis: 'n/a basis' }).expect(400);
     await p.post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'PRISONS', purpose: '', legalBasis: '' }).expect(400);
-    await (await h.as('police.hr@justiceone.demo')).post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'PRISONS', purpose: 'HR is not entitled to ask', legalBasis: 'none given' }).expect(403);
+    await (await h.as('police.hr@nexcust.demo')).post('/api/exchange/requests').send({ personId: held.prisonerRecord.personId, providingInstitution: 'PRISONS', purpose: 'HR is not entitled to ask', legalBasis: 'none given' }).expect(403);
   });
 });
 
@@ -108,13 +108,14 @@ describe('reports', () => {
     expect(r.rows.map((x: any) => x.name)).toEqual(expect.arrayContaining(['Accra Regional Police Command', 'Ashanti Regional Police Command', 'Northern Regional Police Command']));
     expect(r.total.inCustody).toBe(await h.prisma.policeCustodyEpisode.count({ where: { status: 'IN_CUSTODY' } }));
     expect(r.arrestsByMonth).toHaveLength(6);
+    expect(r.total.personnel + r.personnelOutsideCommands).toBe((await (await h.as(APPROVER)).get('/api/police/dashboard').expect(200)).body.personnel);
   });
   it('regional and station users get only their own roll-up', async () => {
-    expect((await (await h.as('police.regional@justiceone.demo')).get('/api/police/reports').expect(200)).body.rows.map((x: any) => x.name)).toEqual(['Accra Regional Police Command']);
-    expect((await (await h.as('police.station@justiceone.demo')).get('/api/police/reports').expect(200)).body.rows.map((x: any) => x.name)).toEqual(['DEMO Accra Station 1']);
+    expect((await (await h.as('police.regional@nexcust.demo')).get('/api/police/reports').expect(200)).body.rows.map((x: any) => x.name)).toEqual(['Accra Regional Police Command']);
+    expect((await (await h.as('police.station@nexcust.demo')).get('/api/police/reports').expect(200)).body.rows.map((x: any) => x.name)).toEqual(['DEMO Accra Station 1']);
   });
   it('prisons national report totals equal the dashboard population', async () => {
-    const a = await h.as('prisons.national@justiceone.demo');
+    const a = await h.as('prisons.national@nexcust.demo');
     const [rep, dash] = await Promise.all([a.get('/api/prisons/reports').expect(200), a.get('/api/prisons/dashboard').expect(200)]);
     expect(rep.body.total.population).toBe(dash.body.population); expect(rep.body.rows).toHaveLength(3);
     await (await h.as(POLICE_REC)).get('/api/prisons/reports').expect(403);

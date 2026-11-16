@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import type { Permission } from '@justiceone/contracts';
+import type { Permission } from '@nexcust/contracts';
 
 export const IS_PUBLIC = 'j1:public';
 export const PERMISSION = 'j1:permission';

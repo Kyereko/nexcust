@@ -1,4 +1,4 @@
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDateTime, qs } from '@/lib/api';
 import { Badge, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
 

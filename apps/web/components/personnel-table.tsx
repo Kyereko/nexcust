@@ -1,4 +1,4 @@
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, qs } from '@/lib/api';
 import Link from 'next/link';
 import { Badge, LinkButton, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
@@ -15,7 +15,7 @@ export async function PersonnelTable({ institution, sp }: { institution: 'police
       <SearchBar q={sp.q} placeholder="Search by name or service number" />
       <Table head={['Service no.', 'Name', 'Rank (substantive)', 'Appointment', 'Posting (unit)', 'Status']} empty={!data.items.length}>
         {data.items.map((r) => (
-          <tr key={r.id} className="hover:bg-slate-50"><td className="font-medium"><Link prefetch={false} className={`${institution === 'police' ? 'text-blue-700' : 'text-green-800'} hover:underline`} href={`/${institution}/personnel/${r.id}`}>{r.serviceNumber}</Link></td><td>{r.surname}, {r.otherNames}</td>
+          <tr key={r.id} className="hover:bg-slate-50"><td className="font-medium"><Link prefetch={false} className={`${institution === 'police' ? 'text-brand' : 'text-brand'} hover:underline`} href={`/${institution}/personnel/${r.id}`}>{r.serviceNumber}</Link></td><td>{r.surname}, {r.otherNames}</td>
             <td>{r.currentRank.name}{r.currentRank.abbreviation ? <span className="text-slate-500"> ({r.currentRank.abbreviation})</span> : null}</td>
             <td>{r.commands.length ? r.commands.map((c) => `${c.acting ? 'Ag. ' : ''}${c.appointment.title}`).join(', ') : <span className="text-slate-400">—</span>}</td>
             <td>{r.currentOrgUnit.name}<div className="text-xs text-slate-500">{r.currentOrgUnit.type.name}</div></td><td><Badge>{r.status}</Badge></td></tr>

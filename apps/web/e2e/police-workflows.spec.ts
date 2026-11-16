@@ -12,7 +12,7 @@ async function signOut(page: Page) { await page.getByRole('button', { name: 'Sig
 
 test('Workflow A — register a detainee, then the station commander authorizes release', async ({ page }) => {
   const surname = `Etwoe${Date.now()}`;
-  await signIn(page, 'police.records@justiceone.demo');
+  await signIn(page, 'police.records@nexcust.demo');
 
   // 1–3: search first, create an identity record only because none exists
   await page.getByRole('link', { name: 'People & Records' }).click();
@@ -50,7 +50,7 @@ test('Workflow A — register a detainee, then the station commander authorizes 
   await signOut(page);
 
   // 6 + 8: supervisor reviews and closes with an authorized disposition
-  await signIn(page, 'police.station@justiceone.demo');
+  await signIn(page, 'police.station@nexcust.demo');
   await page.goto(custodyUrl);
   await page.getByRole('button', { name: 'Mark record as reviewed' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Supervisor review recorded' })).toBeVisible();
@@ -61,10 +61,16 @@ test('Workflow A — register a detainee, then the station commander authorizes 
 });
 
 test('Workflow B — officer posting: HR proposes, supervisor approves, receiving station confirms', async ({ page }) => {
-  await signIn(page, 'police.hr@justiceone.demo');
+  await signIn(page, 'police.hr@nexcust.demo');
   await page.getByRole('link', { name: 'Personnel & Postings' }).click();
-  await page.goto('/police/personnel?page=6');
-  const row = page.getByRole('row').filter({ hasText: 'DEMO Northern Station' }).first();
+  // find any officer still serving at a Northern station (each run moves one of them to Accra)
+  let row = page.getByRole('row').filter({ hasText: 'DEMO Northern Station' }).first();
+  for (let n = 1; n <= 10; n++) {
+    await page.goto(`/police/personnel?page=${n}`);
+    await expect(page.getByRole('heading', { name: 'Personnel & postings' })).toBeVisible();
+    row = page.getByRole('row').filter({ hasText: 'DEMO Northern Station' }).first();
+    if (await row.count()) break;
+  }
   const serviceNo = (await row.getByRole('link').first().textContent())!;
   await row.getByRole('link').first().click();
   await expect(page.getByText(`Service no. ${serviceNo}`)).toBeVisible();
@@ -74,19 +80,19 @@ test('Workflow B — officer posting: HR proposes, supervisor approves, receivin
   await expect(page.getByRole('status').filter({ hasText: 'Posting proposed' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'police.national@justiceone.demo');
+  await signIn(page, 'police.national@nexcust.demo');
   await page.goto('/police/postings');
   await page.getByRole('row').filter({ hasText: serviceNo }).getByRole('button', { name: 'Approve' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Posting approved' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'police.station@justiceone.demo');
+  await signIn(page, 'police.station@nexcust.demo');
   await page.goto('/police/postings');
   await page.getByRole('row').filter({ hasText: serviceNo }).getByRole('button', { name: 'Confirm arrival' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Posting confirmed' })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'police.hr@justiceone.demo');
+  await signIn(page, 'police.hr@nexcust.demo');
   await page.goto(`/police/personnel?q=${serviceNo}`);
   await page.getByRole('link', { name: serviceNo }).click();
   await expect(page.getByRole('row').filter({ hasText: 'CURRENT' })).toContainText('DEMO Accra Station 1'); // current posting updated

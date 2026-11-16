@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDateTime, qs } from '@/lib/api';
 import { Badge, Flash, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
 import { BG_STATUSES, bgTone } from '@/lib/status';
@@ -15,7 +15,7 @@ export default async function BackgroundChecks({ searchParams }: { searchParams:
       <SearchBar q={sp.q} status={sp.status} statuses={BG_STATUSES} placeholder="Reference or applicant name" />
       <Table head={['Reference', 'Applicant', 'Purpose', 'Submitted', 'Last updated', 'Status']} empty={!data.items.length}>
         {data.items.map((a) => (
-          <tr key={a.id} className="hover:bg-slate-50"><td><Link prefetch={false} className="font-medium text-blue-700 hover:underline" href={`/police/background-checks/${a.id}`}>{a.reference}</Link></td>
+          <tr key={a.id} className="hover:bg-slate-50"><td><Link prefetch={false} className="font-medium text-brand hover:underline" href={`/police/background-checks/${a.id}`}>{a.reference}</Link></td>
             <td>{a.fullName}</td><td>{a.purpose}</td><td className="whitespace-nowrap">{fmtDateTime(a.submittedAt)}</td><td className="whitespace-nowrap">{fmtDateTime(a.updatedAt)}</td><td><Badge tone={bgTone(a.status)}>{a.status}</Badge></td></tr>
         ))}
       </Table>

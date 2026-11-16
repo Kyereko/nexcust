@@ -13,7 +13,7 @@ async function signOut(page: Page) { await page.getByRole('button', { name: 'Sig
 
 test('Workflow C — application, review, approval, sample certificate and public verification', async ({ page }) => {
   const doc = `DEMO-GHA-E2E-${Date.now()}`;
-  await signIn(page, 'applicant@justiceone.demo');
+  await signIn(page, 'applicant@nexcust.demo');
   await expect(page.getByRole('heading', { name: 'My background-check applications' })).toBeVisible();
   await page.getByLabel('Full name (as on your identity document)').fill('Akua Demo Applicant');
   await page.getByLabel('Date of birth').fill('1994-05-17');
@@ -23,10 +23,10 @@ test('Workflow C — application, review, approval, sample certificate and publi
   await expect(page.getByRole('status').filter({ hasText: 'submitted' })).toBeVisible();
   const reference = (await page.getByRole('heading', { level: 1 }).textContent())!.replace('Application ', '');
   const applicantUrl = page.url().split('?')[0];
-  await expect(page.getByText('IN PROGRESS')).toBeVisible();
+  await expect(page.getByText('IN PROGRESS', { exact: true })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'police.bgcheck@justiceone.demo');
+  await signIn(page, 'police.bgcheck@nexcust.demo');
   await page.getByRole('link', { name: 'Background Checks', exact: true }).click();
   await page.getByLabel('Search').fill(reference);
   await page.getByRole('button', { name: 'Search' }).click();
@@ -41,15 +41,15 @@ test('Workflow C — application, review, approval, sample certificate and publi
   const appUrl = page.url().split('?')[0];
   await signOut(page);
 
-  await signIn(page, 'police.national@justiceone.demo');
+  await signIn(page, 'police.national@nexcust.demo');
   await page.goto(appUrl);
   await page.getByRole('button', { name: 'Approve and issue certificate' }).click();
   await expect(page.getByRole('status').filter({ hasText: /Certificate DEMO-PCC-\d+ issued/ })).toBeVisible();
   await signOut(page);
 
-  await signIn(page, 'applicant@justiceone.demo');
+  await signIn(page, 'applicant@nexcust.demo');
   await page.goto(applicantUrl);
-  await expect(page.getByText('CERTIFICATE ISSUED')).toBeVisible();
+  await expect(page.getByText('CERTIFICATE ISSUED', { exact: true })).toBeVisible();
   await expect(page.getByText('DEMONSTRATION — NOT VALID')).toBeVisible();
   const code = (await page.locator('.font-mono').first().textContent())!.trim();
   expect(code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
@@ -66,7 +66,7 @@ test('Workflow C — application, review, approval, sample certificate and publi
 });
 
 test('authorized exchange — police see whether a person is in prison custody, with purpose recorded', async ({ page }) => {
-  await signIn(page, 'police.records@justiceone.demo');
+  await signIn(page, 'police.records@nexcust.demo');
   await page.getByRole('link', { name: 'People & Records', exact: true }).click();
   await page.getByLabel('Search').fill('DEMO-NPI-000302');
   await page.getByRole('button', { name: 'Search' }).click();
@@ -76,13 +76,13 @@ test('authorized exchange — police see whether a person is in prison custody, 
 });
 
 test('reports roll up by command and show the monthly trend', async ({ page }) => {
-  await signIn(page, 'police.national@justiceone.demo');
+  await signIn(page, 'police.national@nexcust.demo');
   await page.getByRole('link', { name: 'Reports & Analytics', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'Accra Regional Police Command' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Total' })).toBeVisible();
   await expect(page.getByText('Arrests per month (last six months)')).toBeVisible();
   await signOut(page);
-  await signIn(page, 'prisons.national@justiceone.demo');
+  await signIn(page, 'prisons.national@nexcust.demo');
   await page.getByRole('link', { name: 'Reports & Analytics', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'Ashanti Regional Prisons Command' })).toBeVisible();
   await expect(page.getByText('Admissions per month')).toBeVisible();

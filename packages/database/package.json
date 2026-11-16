@@ -1,5 +1,5 @@
 {
-  "name": "@justiceone/database",
+  "name": "@nexcust/database",
   "version": "0.1.0",
   "private": true,
   "main": "dist/index.js",
@@ -13,6 +13,6 @@
     "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "reset": "dotenv -e ../../.env -- prisma migrate reset --force --skip-seed && dotenv -e ../../.env -- tsx prisma/seed.ts"
   },
-  "dependencies": { "@prisma/client": "^6.19.3", "@justiceone/contracts": "workspace:*" },
+  "dependencies": { "@prisma/client": "^6.19.3", "@nexcust/contracts": "workspace:*" },
   "devDependencies": { "dotenv-cli": "^8.0.0", "prisma": "^6.19.3", "tsx": "^4.19.0", "typescript": "^5.7.0", "@types/node": "^22.0.0" }
 }

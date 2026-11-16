@@ -14,7 +14,8 @@ export default async function PoliceReports() {
         ))}
         {r.rows.length > 1 && <tr className="bg-slate-50 font-semibold"><td>Total</td>{cols.map(([k]) => <td key={k} className="tabular-nums">{r.total[k]}</td>)}</tr>}
       </Table>
-      <div className="mt-6 max-w-2xl"><BarChart title="Arrests per month (last six months)" color="#1d4ed8" data={r.arrestsByMonth.map((m: any) => ({ label: monthLabel(m.month), value: m.count }))} /></div>
+      {r.personnelOutsideCommands > 0 && <p className="mt-2 text-xs text-slate-500">A further {r.personnelOutsideCommands} active officers serve at National Headquarters and directorates, outside the regional commands shown.</p>}
+      <div className="mt-6 max-w-2xl"><BarChart title="Arrests per month (last six months)" color="#1E7B57" data={r.arrestsByMonth.map((m: any) => ({ label: monthLabel(m.month), value: m.count }))} /></div>
       <p className="mt-4 text-xs text-slate-500">Figures are computed live from persisted records. Arrests are events, not findings of guilt.</p>
     </>
   );

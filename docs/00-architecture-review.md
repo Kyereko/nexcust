@@ -1,6 +1,6 @@
 # 00 — Architecture Review and Reconciliation
 
-**Project:** JusticeOne Ghana (Fourth IT) · **Status:** Day 1 foundation delivered · **Environment:** DEMONSTRATION, synthetic data only.
+**Project:** NEXCUST (Fourth IT) · **Status:** Day 1 foundation delivered · **Environment:** DEMONSTRATION, synthetic data only.
 This prototype is not an official system of the Ghana Police Service or the Ghana Prisons Service.
 
 Purpose: record where this implementation follows the ChatGPT specification, where it deliberately deviates, and what must be reconciled before further workstreams start. **The code in `packages/contracts` and `packages/database/prisma/schema.prisma` is the authoritative contract.**
@@ -50,3 +50,13 @@ The proposed architecture is sound for a five-day prototype: modular monolith, P
 3. Confirm separate personnel tables per institution (kept as specified) rather than one shared table.
 4. Column naming is Prisma camelCase with snake_case table names; change now or never.
 5. Roles are scoped by org unit: "Regional Commander" is a role assigned at a Regional Command unit, not a hard-coded level.
+
+## 6. Decisions taken during the build
+
+| # | Decision | Reason |
+|---|---|---|
+| B1 | Product named **NEXCUST** (formerly working title JusticeOne); package scope `@nexcust/*` | Product owner decision |
+| B2 | Certificate issuance approved by the Police National Administrator in the demo; the Background Check Officer cannot approve | Maker–checker without adding a role; a dedicated approving-officer role can be added later |
+| B3 | Records officers of both institutions hold `exchange.request` | Admission and arrest are the moments the other institution's status matters; every request carries purpose and legal basis |
+| B4 | Clearance search discloses court-recorded convictions only | Arrests and charges are not findings of guilt; actual disclosure rules to be confirmed with the Service |
+| B5 | Certificate validity 180 days (`CERTIFICATE_VALIDITY_DAYS`) | Placeholder; actual validity to be confirmed |

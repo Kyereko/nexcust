@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import type { Permission, SessionUser } from '@justiceone/contracts';
+import type { Permission, SessionUser } from '@nexcust/contracts';
 
 /** One role assignment, resolved for authorization decisions. */
 export interface Grant {

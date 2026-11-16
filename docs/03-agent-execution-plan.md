@@ -26,7 +26,7 @@ Legend: ✅ done and tested · ◻ open.
 - ✅ Permission + org-unit jurisdiction guard; refusals audited; append-only audit table
 - ✅ Application shell with five workspaces, live dashboards, custody register and detail, case register, prisoner registry and detail, personnel, stations, facilities, users, audit trail, reference-data view
 - ✅ Research pack: nine documents, evidence register, 46 stakeholder questions
-- ✅ 24 API security tests, 6 browser tests (52 and 9 after Day 3)
+- ✅ 24 API security tests, 6 browser tests (63 and 12 after Day 4)
 
 ### Day 2 — Police workflows (complete)
 All six items delivered with API and browser tests. Not built: a station-to-station custody transfer screen (the API supports it) and linking additional persons or charges to a case from the UI.
@@ -51,13 +51,15 @@ All five items delivered with API and browser tests. Release dates and remission
 | ✅ R-04 | Prison postings | P-05 pattern | As P-05 |
 | ✅ R-05 | Rehabilitation enrollments, housing assignment | ✅ R-01 | Enrollment recorded |
 
-### Day 4 — Integration
+### Day 4 — Integration (complete)
+Delivered with API and browser tests, plus the NEXCUST rename and brand identity (`docs/05-brand-identity.md`).
+
 | ID | Task | Depends on | Acceptance test |
 |---|---|---|---|
-| I-01 | Background-check case processing + decision + sample certificate | ✅ P-04 | Application progresses through review |
-| I-02 | Certificate verification endpoint and page | I-01 | Verifiable demonstration certificate |
-| I-03 | Authorized exchange (police remand ↔ prison admission) | P-03, R-01 | Logged, purpose-bound disclosure |
-| I-04 | Reports and national roll-ups | Days 2–3 | Dashboard reflects saved records |
+| ✅ I-01 | Background-check case processing + decision + sample certificate | ✅ P-04 | Application progresses through review |
+| ✅ I-02 | Certificate verification endpoint and page | ✅ I-01 | Verifiable demonstration certificate |
+| ✅ I-03 | Authorized exchange (police remand ↔ prison admission) | P-03, R-01 | Logged, purpose-bound disclosure |
+| ✅ I-04 | Reports and national roll-ups | Days 2–3 | Dashboard reflects saved records |
 
 ### Day 5 — Hardening and demonstration
 - ◻ Full browser run of all twelve acceptance scenarios
@@ -81,7 +83,8 @@ Rule: no new features after Day 3 unless required to finish a core scenario.
 | Register prisoner: admission saved | ✅ automated (API and browser) |
 | Transfer prisoner: both establishments reflect it | ✅ automated (API and browser) |
 | Release prisoner: status updates with authorization history | ✅ automated (API and browser) |
-| Background-check application and certificate | ◻ Day 4 |
+| Background-check application progresses through review | ✅ automated (API and browser) |
+| Generate sample certificate, verifiable | ✅ automated (API and browser) |
 
 ## 4. Risks
 

@@ -6,7 +6,7 @@ export function LogoutButton() {
   return (
     <button
       onClick={async () => { await fetch('/api/auth/logout', { method: 'POST' }); router.replace('/login'); router.refresh(); }}
-      className="rounded-md border border-white/30 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10"
+      className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-medium text-brand hover:bg-sage"
     >Sign out</button>
   );
 }

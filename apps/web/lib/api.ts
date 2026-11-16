@@ -2,10 +2,10 @@ import 'server-only';
 import { cache } from 'react';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { SessionUser } from '@justiceone/contracts';
+import type { SessionUser } from '@nexcust/contracts';
 
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
-const COOKIE = process.env.SESSION_COOKIE_NAME ?? 'j1_session';
+const COOKIE = process.env.SESSION_COOKIE_NAME ?? 'nx_session';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDate, getSession, qs } from '@/lib/api';
 import { Card, Flash, LinkButton, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
 
@@ -21,8 +21,8 @@ export default async function People({ searchParams }: { searchParams: Promise<R
               <tr key={p.id} className="hover:bg-slate-50"><td className="font-medium">{p.indexNumber}</td><td>{p.surname}, {p.otherNames}</td><td>{p.sex}</td><td className="whitespace-nowrap">{fmtDate(p.dateOfBirth)}</td><td>{p.hometown ?? '—'}</td>
                 <td className="text-xs">{p.identifiers.map((i: any) => `${i.type.replace(/_/g, ' ')}: ${i.value}`).join('; ') || '—'}</td>
                 <td className="whitespace-nowrap text-right">
-                  {can('police.case.read') && <Link prefetch={false} className="text-blue-700 hover:underline" href={`/police/people/${p.id}`}>Police record</Link>}
-                  {can('police.custody.write') && <Link prefetch={false} className="ml-4 text-blue-700 hover:underline" href={`/police/custody/new?personId=${p.id}`}>Register arrest</Link>}
+                  {can('police.case.read') && <Link prefetch={false} className="text-brand hover:underline" href={`/police/people/${p.id}`}>Police record</Link>}
+                  {can('police.custody.write') && <Link prefetch={false} className="ml-4 text-brand hover:underline" href={`/police/custody/new?personId=${p.id}`}>Register arrest</Link>}
                 </td></tr>
             ))}
           </Table>

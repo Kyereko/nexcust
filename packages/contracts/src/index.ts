@@ -1,5 +1,5 @@
 /**
- * JusticeOne shared contracts — the single source of truth for roles, permissions
+ * NEXCUST shared contracts — the single source of truth for roles, permissions
  * and the authorization matrix. The Chief Architect workstream owns this file:
  * no other workstream may change it without an approved contract change.
  */

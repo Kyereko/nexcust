@@ -1,4 +1,4 @@
-process.env.DATABASE_URL = process.env.DATABASE_URL_TEST ?? 'postgresql://justiceone:justiceone@localhost:5432/justiceone_test?schema=public';
+process.env.DATABASE_URL = process.env.DATABASE_URL_TEST ?? 'postgresql://nexcust:nexcust@localhost:5432/nexcust_test?schema=public';
 process.env.LOGIN_RATE_LIMIT = '1000';
 process.env.API_RATE_LIMIT = '100000';
 import 'reflect-metadata';

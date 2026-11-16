@@ -4,14 +4,14 @@ import type { ReactNode } from 'react';
 export function PageHeader({ title, subtitle, children }: { title: string; subtitle?: string; children?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div><h1 className="text-2xl font-semibold tracking-tight">{title}</h1>{subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}</div>
+      <div><h1 className="text-2xl font-semibold tracking-tight text-brand">{title}</h1>{subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}</div>
       {children}
     </div>
   );
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-lg border border-slate-200 bg-white shadow-sm ${className}`}>{children}</div>;
+  return <div className={`rounded-lg border border-line bg-surface ${className}`}>{children}</div>;
 }
 
 export function Stat({ label, value, hint, tone = 'default' }: { label: string; value: ReactNode; hint?: string; tone?: 'default' | 'alert' }) {
@@ -26,7 +26,7 @@ export function Stat({ label, value, hint, tone = 'default' }: { label: string; 
 
 const TONES: Record<string, string> = {
   green: 'bg-emerald-50 text-emerald-800 ring-emerald-200', amber: 'bg-amber-50 text-amber-800 ring-amber-200',
-  red: 'bg-red-50 text-red-800 ring-red-200', blue: 'bg-blue-50 text-blue-800 ring-blue-200', slate: 'bg-slate-100 text-slate-700 ring-slate-200',
+  red: 'bg-red-50 text-red-800 ring-red-200', blue: 'bg-blue-50 text-blue-800 ring-blue-200', slate: 'bg-slate-100 text-slate-700 ring-slate-200', sage: 'bg-sage text-brand ring-brand/20',
 };
 const STATUS_TONE: Record<string, string> = {
   IN_CUSTODY: 'amber', IN_TRANSIT: 'blue', RELEASED: 'green', RELEASED_ON_BAIL: 'green', RELEASED_NO_CHARGE: 'green', REMANDED_TO_PRISON: 'blue',
@@ -40,28 +40,28 @@ export function Badge({ children, tone }: { children: string; tone?: string }) {
 
 export function Table({ head, children, empty }: { head: string[]; children: ReactNode; empty?: boolean }) {
   return (
-    <Card className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg border border-line bg-white">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <thead className="border-b border-line bg-surface text-xs uppercase tracking-wide text-slate-500">
           <tr>{head.map((h) => <th key={h} className="px-4 py-2.5 font-medium">{h}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-slate-100 [&_td]:px-4 [&_td]:py-2.5">{children}</tbody>
       </table>
       {empty && <div className="p-8 text-center text-sm text-slate-500">No records found within your jurisdiction.</div>}
-    </Card>
+    </div>
   );
 }
 
 export function SearchBar({ q, placeholder, statuses, status }: { q?: string; placeholder: string; statuses?: string[]; status?: string }) {
   return (
     <form className="mb-4 flex flex-wrap gap-2" method="get">
-      <input name="q" defaultValue={q} placeholder={placeholder} aria-label="Search" className="w-72 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500" />
+      <input name="q" defaultValue={q} placeholder={placeholder} aria-label="Search" className="w-72 rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-brand" />
       {statuses && (
-        <select name="status" defaultValue={status ?? ''} aria-label="Status" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+        <select name="status" defaultValue={status ?? ''} aria-label="Status" className="rounded-md border border-line bg-white px-3 py-2 text-sm">
           <option value="">All statuses</option>{statuses.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
         </select>
       )}
-      <button className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Search</button>
+      <button className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover">Search</button>
     </form>
   );
 }
@@ -73,8 +73,8 @@ export function Pager({ total, page, pageSize, base, params }: { total: number; 
     <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
       <span>{total.toLocaleString()} record{total === 1 ? '' : 's'} · page {page} of {pages}</span>
       <span className="flex gap-2">
-        {page > 1 && <Link className="rounded border border-slate-300 bg-white px-3 py-1 hover:bg-slate-50" href={href(page - 1)}>Previous</Link>}
-        {page < pages && <Link className="rounded border border-slate-300 bg-white px-3 py-1 hover:bg-slate-50" href={href(page + 1)}>Next</Link>}
+        {page > 1 && <Link className="rounded border border-line bg-white px-3 py-1 text-brand hover:bg-sage" href={href(page - 1)}>Previous</Link>}
+        {page < pages && <Link className="rounded border border-line bg-white px-3 py-1 text-brand hover:bg-sage" href={href(page + 1)}>Next</Link>}
       </span>
     </div>
   );
@@ -102,14 +102,14 @@ export function Flash({ sp }: { sp: Record<string, string | undefined> }) {
   return null;
 }
 
-export const inputCls = 'mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-600';
+export const inputCls = 'mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand';
 export function Label({ text, children, hint }: { text: string; children: ReactNode; hint?: string }) {
   return <label className="block text-sm font-medium text-slate-700">{text}{children}{hint && <span className="mt-1 block text-xs font-normal text-slate-500">{hint}</span>}</label>;
 }
 export function Button({ children, tone = 'primary' }: { children: ReactNode; tone?: 'primary' | 'secondary' | 'danger' }) {
-  const cls = { primary: 'bg-slate-900 text-white hover:bg-slate-700', secondary: 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50', danger: 'bg-red-700 text-white hover:bg-red-600' }[tone];
+  const cls = { primary: 'bg-brand text-white hover:bg-brand-hover', secondary: 'border border-brand/30 bg-white text-brand hover:bg-sage', danger: 'bg-red-700 text-white hover:bg-red-600' }[tone];
   return <button type="submit" className={`rounded-md px-4 py-2 text-sm font-medium ${cls}`}>{children}</button>;
 }
 export function LinkButton({ href, children }: { href: string; children: ReactNode }) {
-  return <Link href={href} prefetch={false} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">{children}</Link>;
+  return <Link href={href} prefetch={false} className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover">{children}</Link>;
 }

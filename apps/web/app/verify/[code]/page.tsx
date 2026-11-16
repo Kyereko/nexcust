@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Wordmark } from '@/components/brand';
 import { headers } from 'next/headers';
 
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
@@ -12,8 +13,8 @@ export default async function VerifyResult({ params }: { params: Promise<{ code:
   const found = 'certificateNumber' in r;
   return (
     <main className="mx-auto max-w-xl px-6 py-12">
-      <div className="text-sm font-semibold tracking-widest text-slate-500">JUSTICEONE GHANA · DEMONSTRATION</div>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Certificate verification</h1>
+      <Wordmark size="md" /><div className="mt-1 text-xs tracking-[0.2em] text-slate-500">DEMONSTRATION</div>
+      <h1 className="mt-6 text-3xl font-semibold tracking-tight text-brand">Certificate verification</h1>
       <div role="status" className={`mt-6 rounded-lg border p-5 ${r.valid ? 'border-emerald-300 bg-emerald-50' : 'border-red-300 bg-red-50'}`}>
         <div className={`text-lg font-semibold ${r.valid ? 'text-emerald-900' : 'text-red-900'}`}>{r.valid ? '✓ Authentic and valid (demonstration certificate)' : found ? `✕ Certificate ${r.status?.toLowerCase()}` : '✕ Not verified'}</div>
         {!found && <p className="mt-1 text-sm text-red-900">{r.message}</p>}

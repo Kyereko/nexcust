@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDateTime, getSession, qs } from '@/lib/api';
 import { Badge, Button, Flash, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
 import { decidePosting } from '../actions';
@@ -10,13 +10,13 @@ export default async function Postings({ searchParams }: { searchParams: Promise
   const canDecide = user.permissions.includes('police.posting.approve');
   return (
     <>
-      <Link href="/police/personnel" className="text-sm text-blue-700 hover:underline">← Personnel & postings</Link>
+      <Link href="/police/personnel" className="text-sm text-brand hover:underline">← Personnel & postings</Link>
       <PageHeader title="Postings" subtitle="Proposed → approved by the releasing command → confirmed by the receiving command" />
       <Flash sp={sp} />
       <SearchBar placeholder="(filter by status)" status={sp.status} statuses={['PROPOSED', 'APPROVED', 'CONFIRMED', 'ENDED', 'REJECTED']} />
       <Table head={['Officer', 'From', 'To', 'Reason', 'Proposed', 'Status', '']} empty={!data.items.length}>
         {data.items.map((p) => (
-          <tr key={p.id}><td><Link prefetch={false} className="font-medium text-blue-700 hover:underline" href={`/police/personnel/${p.personnel.id}`}>{p.personnel.serviceNumber}</Link><div className="text-xs text-slate-500">{p.personnel.currentRank.abbreviation ?? p.personnel.currentRank.name} {p.personnel.surname}, {p.personnel.otherNames}</div></td>
+          <tr key={p.id}><td><Link prefetch={false} className="font-medium text-brand hover:underline" href={`/police/personnel/${p.personnel.id}`}>{p.personnel.serviceNumber}</Link><div className="text-xs text-slate-500">{p.personnel.currentRank.abbreviation ?? p.personnel.currentRank.name} {p.personnel.surname}, {p.personnel.otherNames}</div></td>
             <td>{p.fromOrgUnit?.name ?? '—'}</td><td className="font-medium">{p.toOrgUnit.name}</td><td>{p.reason}</td><td className="whitespace-nowrap">{fmtDateTime(p.createdAt)}</td><td><Badge tone={p.status === 'PROPOSED' ? 'amber' : p.status === 'APPROVED' ? 'blue' : undefined}>{p.status}</Badge></td>
             <td className="text-right">{canDecide && ['PROPOSED', 'APPROVED'].includes(p.status) && (
               <div className="flex justify-end gap-2">

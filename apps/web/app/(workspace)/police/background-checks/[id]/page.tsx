@@ -19,7 +19,7 @@ export default async function BgDetail({ params, searchParams }: { params: Promi
   const iProcessed = a.reviews.some((r: any) => r.reviewerId === user.id);
   return (
     <>
-      <Link href="/police/background-checks" className="text-sm text-blue-700 hover:underline">← Background checks</Link>
+      <Link href="/police/background-checks" className="text-sm text-brand hover:underline">← Background checks</Link>
       <PageHeader title={`Application ${a.reference}`} subtitle={`${a.fullName} · ${a.purpose}`}><Badge tone={bgTone(a.status)}>{a.status}</Badge></PageHeader>
       <Flash sp={sp} />
       <div className="grid gap-4 lg:grid-cols-2">
@@ -59,7 +59,7 @@ export default async function BgDetail({ params, searchParams }: { params: Promi
           {iProcessed ? <p className="text-sm text-slate-600">You processed this application, so a different authorized officer must decide it.</p> : (
             <form action={decideBgCheck} className="space-y-3"><input type="hidden" name="id" value={a.id} />
               <Label text="Result to print on the certificate, or reason for rejection" hint="This is your decision as the approving officer. The system does not determine the result."><textarea name="note" required minLength={5} maxLength={500} rows={2} className={inputCls} defaultValue={search && search.personLinked && search.convictions.length ? '' : 'No conviction recorded.'} /></Label>
-              <div className="flex gap-2"><button name="decision" value="APPROVE" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Approve and issue certificate</button>
+              <div className="flex gap-2"><button name="decision" value="APPROVE" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover">Approve and issue certificate</button>
                 <button name="decision" value="REJECT" className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Reject</button></div>
             </form>
           )}

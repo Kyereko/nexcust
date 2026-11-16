@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDate, qs } from '@/lib/api';
 import { Button, Card, Field, Flash, Label, LinkButton, PageHeader, SearchBar, Table, inputCls } from '@/components/ui';
 import { admit } from '../actions';
@@ -23,7 +23,7 @@ export default async function Admissions({ searchParams }: { searchParams: Promi
             {data.items.map((p) => (
               <tr key={p.id}><td className="font-medium">{p.indexNumber}</td><td>{p.surname}, {p.otherNames}</td><td>{p.sex}</td><td>{fmtDate(p.dateOfBirth)}</td>
                 <td className="text-xs">{p.identifiers.map((i: any) => `${i.type.replace(/_/g, ' ')}: ${i.value}`).join('; ') || '—'}</td>
-                <td className="text-right"><Link prefetch={false} className="text-green-800 hover:underline" href={`/prisons/admissions?personId=${p.id}`}>Admit</Link></td></tr>
+                <td className="text-right"><Link prefetch={false} className="text-brand hover:underline" href={`/prisons/admissions?personId=${p.id}`}>Admit</Link></td></tr>
             ))}
           </Table>
         )}
@@ -34,7 +34,7 @@ export default async function Admissions({ searchParams }: { searchParams: Promi
   const today = new Date().toISOString().slice(0, 10);
   return (
     <>
-      <Link href="/prisons/admissions" className="text-sm text-green-800 hover:underline">← Admissions</Link>
+      <Link href="/prisons/admissions" className="text-sm text-brand hover:underline">← Admissions</Link>
       <PageHeader title="Admit to custody" subtitle="Step 2 — verify the legal authority and record the admission" />
       <Flash sp={sp} />
       <Card className="mb-4 p-5"><dl className="grid grid-cols-2 gap-4 md:grid-cols-4"><Field label="Person">{p.surname}, {p.otherNames}</Field><Field label="Index no.">{p.indexNumber}</Field><Field label="Sex">{p.sex}</Field><Field label="Date of birth">{fmtDate(p.dateOfBirth)}</Field></dl></Card>

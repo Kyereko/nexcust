@@ -2,13 +2,13 @@
 services:
   db:
     image: postgres:16-alpine
-    environment: { POSTGRES_USER: justiceone, POSTGRES_PASSWORD: justiceone, POSTGRES_DB: justiceone }
+    environment: { POSTGRES_USER: nexcust, POSTGRES_PASSWORD: nexcust, POSTGRES_DB: nexcust }
     volumes: [pgdata:/var/lib/postgresql/data]
-    healthcheck: { test: ["CMD-SHELL", "pg_isready -U justiceone"], interval: 5s, timeout: 3s, retries: 10 }
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U nexcust"], interval: 5s, timeout: 3s, retries: 10 }
   api:
     build: { context: ., dockerfile: apps/api/Dockerfile }
     environment:
-      DATABASE_URL: postgresql://justiceone:justiceone@db:5432/justiceone?schema=public
+      DATABASE_URL: postgresql://nexcust:nexcust@db:5432/nexcust?schema=public
       API_PORT: "4000"
       WEB_ORIGIN: http://localhost:3000
       COOKIE_SECURE: "false"

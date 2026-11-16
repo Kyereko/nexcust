@@ -1,10 +1,12 @@
-# JusticeOne Ghana — Demonstration Prototype
+# NEXCUST — Demonstration Prototype
 
-**Fourth IT** · Integrated police and prisons records management.
+**Connected Institutions. Trusted Records.**
+
+Integrated police and prisons records management for Ghana. Powered by Fourth IT.
 
 > **DEMONSTRATION ONLY.** Synthetic data. This is not an official system of the Ghana Police Service or the Ghana Prisons Service, holds no real records, and is not connected to any government system.
 
-## What works today (Day 3 of 5)
+## What works today (Day 4 of 5)
 
 - Sign-in with server-side sessions; 15 demonstration accounts across 13 roles
 - Police and Prisons workspaces with live dashboards from the database
@@ -14,14 +16,17 @@
 - Ghana institutional reference data (ranks, appointments, unit types) with evidence status
 - Police workflows: person search and registration with duplicate review, arrest and custody through to authorized closure, case management, officer posting (propose → approve → confirm)
 - Prisons workflows: admission against a verified warrant, transfer (initiate → approve and dispatch → receiving establishment confirms), release (initiate → second officer authorizes), housing, rehabilitation enrollment, officer postings
-- 52 API tests and 9 browser tests
+- Background checks: applicant submission, staged review, decision by a second officer, sample certificate, public verification at `/verify`
+- Authorized exchange between police and prisons (purpose and legal basis recorded)
+- Reports rolled up by regional command with monthly trends
+- 63 API tests and 12 browser tests
 
-Background checks, certificate verification, cross-institution exchange and reports are scheduled for Day 4: see `docs/03-agent-execution-plan.md`.
+Day 5 (hardening, deployment, demonstration pack) remains: see `docs/03-agent-execution-plan.md`.
 
 ## Structure
 
 ```
-justiceone/
+nexcust/
 ├── apps/
 │   ├── api/            NestJS API (auth, audit, shared, police, prisons)
 │   └── web/            Next.js web app (workspaces, e2e tests)
@@ -33,6 +38,7 @@ justiceone/
 │   ├── 01-database-schema.md
 │   ├── 02-api-contracts-authz.md
 │   ├── 03-agent-execution-plan.md
+│   ├── 05-brand-identity.md
 │   └── research/       Institutional research pack and evidence register
 ├── docker-compose.yml
 └── .env.example
@@ -76,28 +82,28 @@ Password for all accounts: the value of `DEMO_PASSWORD` in `.env` (default `Demo
 
 | Email | Role | Jurisdiction |
 |---|---|---|
-| admin@justiceone.demo | Platform Administrator | Platform (no operational records) |
-| police.national@justiceone.demo | Police National Administrator | National Police Headquarters |
-| police.regional@justiceone.demo | Police Regional Commander | Accra Regional Police Command |
-| police.station@justiceone.demo | Police Station Commander | DEMO Accra Station 1 |
-| police.records@justiceone.demo | Police Records Officer | DEMO Accra Station 1 |
-| police.records.kumasi@justiceone.demo | Police Records Officer | DEMO Ashanti Station 1 |
-| police.hr@justiceone.demo | Police HR Officer | National Police Headquarters |
-| police.bgcheck@justiceone.demo | Background Check Officer | National Police Headquarters |
-| prisons.national@justiceone.demo | Prisons National Administrator | Prisons Service Headquarters |
-| prisons.superintendent@justiceone.demo | Prison Superintendent (Officer-in-Charge) | DEMO Ashanti Central Prison |
-| prisons.records@justiceone.demo | Prison Records Officer | DEMO Ashanti Central Prison |
-| prisons.records.north@justiceone.demo | Prison Records Officer | DEMO Northern Central Prison |
-| prisons.hr@justiceone.demo | Prison HR Officer | Prisons Service Headquarters |
-| auditor@justiceone.demo | Auditor | All audit events, read-only |
-| applicant@justiceone.demo | Public Applicant | Own applications only |
+| admin@nexcust.demo | Platform Administrator | Platform (no operational records) |
+| police.national@nexcust.demo | Police National Administrator | National Police Headquarters |
+| police.regional@nexcust.demo | Police Regional Commander | Accra Regional Police Command |
+| police.station@nexcust.demo | Police Station Commander | DEMO Accra Station 1 |
+| police.records@nexcust.demo | Police Records Officer | DEMO Accra Station 1 |
+| police.records.kumasi@nexcust.demo | Police Records Officer | DEMO Ashanti Station 1 |
+| police.hr@nexcust.demo | Police HR Officer | National Police Headquarters |
+| police.bgcheck@nexcust.demo | Background Check Officer | National Police Headquarters |
+| prisons.national@nexcust.demo | Prisons National Administrator | Prisons Service Headquarters |
+| prisons.superintendent@nexcust.demo | Prison Superintendent (Officer-in-Charge) | DEMO Ashanti Central Prison |
+| prisons.records@nexcust.demo | Prison Records Officer | DEMO Ashanti Central Prison |
+| prisons.records.north@nexcust.demo | Prison Records Officer | DEMO Northern Central Prison |
+| prisons.hr@nexcust.demo | Prison HR Officer | Prisons Service Headquarters |
+| auditor@nexcust.demo | Auditor | All audit events, read-only |
+| applicant@nexcust.demo | Public Applicant | Own applications only |
 
 ## Tests
 
-API security tests need a migrated and seeded database named in `DATABASE_URL_TEST` (default `justiceone_test` on localhost).
+API security tests need a migrated and seeded database named in `DATABASE_URL_TEST` (default `nexcust_test` on localhost).
 
 ```bash
-pnpm --filter @justiceone/api test
+pnpm --filter @nexcust/api test
 ```
 
 Browser tests need the API and web app running.
@@ -126,7 +132,6 @@ Starts PostgreSQL, runs migrations and the seed, then the API and web app. The c
 
 ## Known limitations
 
-- Background checks are read-only until Day 4.
 - Browser tests write to the development database (each run creates synthetic persons and prisoners, and moves one police officer).
 - No multi-factor authentication, password reset or user-provisioning screens.
 - Sessions are stored in PostgreSQL; no idle timeout separate from the 8-hour expiry.

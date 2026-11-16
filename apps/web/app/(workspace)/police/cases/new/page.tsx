@@ -7,7 +7,7 @@ export default async function NewCase({ searchParams }: { searchParams: Promise<
   const sp = await searchParams; const stations = await api<any[]>('/police/stations');
   return (
     <>
-      <Link href="/police/cases" className="text-sm text-blue-700 hover:underline">← Cases & investigations</Link>
+      <Link href="/police/cases" className="text-sm text-brand hover:underline">← Cases & investigations</Link>
       <PageHeader title="Open a case" subtitle="Records the reported incident and opens the investigation" />
       <Flash sp={sp} />
       <Card className="p-5"><form action={createCase} className="grid gap-4 md:grid-cols-2">

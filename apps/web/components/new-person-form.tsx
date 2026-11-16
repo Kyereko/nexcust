@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDate, qs } from '@/lib/api';
 import { Button, Card, Flash, Label, PageHeader, Table, inputCls } from '@/components/ui';
 import { createPerson } from '@/app/(workspace)/person-actions';
 
 /** Identity registration with mandatory duplicate review. `ws` decides where the officer goes next. */
 export async function NewPersonForm({ ws, sp }: { ws: 'police' | 'prisons'; sp: Record<string, string | undefined> }) {
-  const link = ws === 'police' ? 'text-blue-700' : 'text-green-800'; const usePath = (id: string) => ws === 'police' ? `/police/people/${id}` : `/prisons/admissions?personId=${id}`; const review = sp.review === '1' && sp.surname;
+  const link = ws === 'police' ? 'text-brand' : 'text-brand'; const usePath = (id: string) => ws === 'police' ? `/police/people/${id}` : `/prisons/admissions?personId=${id}`; const review = sp.review === '1' && sp.surname;
   const matches = review ? (await api<Paginated<any>>(`/persons${qs({ q: sp.surname, pageSize: '20' })}`)).items : [];
   return (
     <>

@@ -4,7 +4,7 @@
 
 Research date: 15 November 2026. Status key as in 01. "Title verified" means the instrument's title, number and date were read on GhaLII (listing or excerpt) or on the institution's own site; it does not mean the full text was read. GhaLII document pages were blocked; only search excerpts were available.
 
-| ID | Instrument | Provision | What was read | Relevance to JusticeOne | Source | Status |
+| ID | Instrument | Provision | What was read | Relevance to NEXCUST | Source | Status |
 |---|---|---|---|---|---|---|
 | LEG-001 | Constitution of the Republic of Ghana, 1992 | Art. 14(3) | A person arrested, restricted or detained who is not released "shall be brought before a court within forty-eight hours after the arrest, restriction or detention" | Custody clock from time of arrest; alert before 48 hours | GhaLII excerpt | VERIFIED |
 | LEG-002 | Kpedu v Attorney-General [2019] GHASC 90 | — | Headnote: the 48-hour rule "includes weekends and public holidays" | Clock must run on calendar hours, not working hours | GhaLII headnote | VERIFIED |

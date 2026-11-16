@@ -2,7 +2,7 @@
 
 # 05 — Existing systems assessment
 
-Research date: 15 November 2026. Status key as in 01. Position for the prototype: these systems exist and are owned by the institutions; JusticeOne should be designed to **integrate with or complement** them, not to replace them.
+Research date: 15 November 2026. Status key as in 01. Position for the prototype: these systems exist and are owned by the institutions; NEXCUST should be designed to **integrate with or complement** them, not to replace them.
 
 ## 1. Inventory
 
@@ -43,10 +43,10 @@ Data collected by the form (VERIFIED from portal text): names, gender, date and 
 
 | Area | Implication |
 |---|---|
-| Criminal record of truth | CDSB's Criminal Records Database and AFIS are the Police Service's record of convictions and fingerprints. JusticeOne should hold a reference (e.g. a CDSB record or fingerprint reference field) and never present itself as the authoritative criminal record |
+| Criminal record of truth | CDSB's Criminal Records Database and AFIS are the Police Service's record of convictions and fingerprints. NEXCUST should hold a reference (e.g. a CDSB record or fingerprint reference field) and never present itself as the authoritative criminal record |
 | Clearance | The public clearance service already exists end to end. Do not build a competing applicant-facing clearance flow; at most show a read-only "clearance check requested/completed" status sourced from the police system |
 | Station → CDSB flow | The documented gap is paper: CID Forms 6 and 8 travel from stations to CDSB. A station-side digital capture that outputs those forms' data is complementary |
-| Case tracking | A cross-agency CTS has been launched. JusticeOne's arrest-to-custody events should be exportable in a neutral format so they could feed a tracking system rather than duplicate it |
+| Case tracking | A cross-agency CTS has been launched. NEXCUST's arrest-to-custody events should be exportable in a neutral format so they could feed a tracking system rather than duplicate it |
 | Prisons | An electronic case management system and a classification tool are reported. Treat prison admission, classification and movement screens as demonstrations to be mapped onto whatever the Service runs |
 | Identity | Use Ghana Card number as an optional identifier field only; the prototype uses synthetic data and must not call NIA services |
 | Regional interoperability | WAPIS exists for cross-border police information; out of scope, but record identifiers should not preclude later mapping |

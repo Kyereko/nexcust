@@ -2,20 +2,20 @@
  * Single-series column chart (counts by period). One hue, no legend (the title names the series),
  * 4px rounded data-ends on a shared baseline, 2px gaps, recessive axis, hover/focus tooltip per
  * column with a hit target wider than the mark, and a table view for screen readers and print.
- * Colours validated with the dataviz palette script: police #1d4ed8, prisons #15803d.
+ * Mark colour: #1E7B57 (brand-family green validated for data marks; #174D38 is too dark for marks).
  */
 export function BarChart({ title, data, color, max: forcedMax }: { title: string; data: Array<{ label: string; value: number }>; color: string; max?: number }) {
   const max = Math.max(1, forcedMax ?? 0, ...data.map((d) => d.value));
   const peak = data.reduce((a, b) => (b.value > a.value ? b : a), data[0]);
   return (
-    <figure className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <figcaption className="text-sm font-semibold text-slate-900">{title}</figcaption>
+    <figure className="rounded-lg border border-line bg-white p-5">
+      <figcaption className="text-sm font-semibold text-brand">{title}</figcaption>
       <div className="mt-4 flex h-40 items-end gap-0.5 border-b border-slate-300" aria-hidden="true">
         {data.map((d) => (
           <div key={d.label} tabIndex={0} className="group relative flex h-full flex-1 items-end justify-center px-1.5 outline-none">
             <div className="w-full rounded-t-[4px] transition-opacity group-hover:opacity-80 group-focus-visible:opacity-80" style={{ height: `${(d.value / max) * 100}%`, minHeight: d.value ? 2 : 0, background: color }} />
             {d === peak && d.value > 0 && <span className="absolute text-xs font-medium tabular-nums text-slate-600" style={{ bottom: `calc(${(d.value / max) * 100}% + 4px)` }}>{d.value}</span>}
-            <span role="tooltip" className="pointer-events-none absolute -top-2 left-1/2 z-10 hidden -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow group-hover:block group-focus-visible:block">
+            <span role="tooltip" className="pointer-events-none absolute -top-2 left-1/2 z-10 hidden -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md bg-brand px-2 py-1 text-xs text-white shadow group-hover:block group-focus-visible:block">
               {d.label}: <b className="tabular-nums">{d.value}</b>
             </span>
           </div>

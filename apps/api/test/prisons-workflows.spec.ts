@@ -2,8 +2,8 @@
 import { startApp } from './harness';
 
 let h: Awaited<ReturnType<typeof startApp>>;
-const RECORDS = 'prisons.records@justiceone.demo', NORTH = 'prisons.records.north@justiceone.demo', OIC = 'prisons.superintendent@justiceone.demo';
-const NATIONAL = 'prisons.national@justiceone.demo', HR = 'prisons.hr@justiceone.demo', POLICE = 'police.records@justiceone.demo';
+const RECORDS = 'prisons.records@nexcust.demo', NORTH = 'prisons.records.north@nexcust.demo', OIC = 'prisons.superintendent@nexcust.demo';
+const NATIONAL = 'prisons.national@nexcust.demo', HR = 'prisons.hr@nexcust.demo', POLICE = 'police.records@nexcust.demo';
 const uniq = () => `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
 let ashanti: string, north: string, housing: string;
 

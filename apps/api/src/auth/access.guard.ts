@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { Permission } from '@justiceone/contracts';
+import type { Permission } from '@nexcust/contracts';
 import { AuthService } from './auth.service';
 import { AuditService } from '../audit/audit.service';
 import { IS_PUBLIC, PERMISSION } from './decorators';

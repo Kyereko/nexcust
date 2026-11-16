@@ -14,7 +14,7 @@ export default async function PrisonerDetail({ params, searchParams }: { params:
   const establishments = held && can('prisons.transfer.initiate') ? await api<any[]>('/prisons/establishments') : [];
   return (
     <>
-      <Link href="/prisons/prisoners" className="text-sm text-green-800 hover:underline">← Prisoner registry</Link>
+      <Link href="/prisons/prisoners" className="text-sm text-brand hover:underline">← Prisoner registry</Link>
       <PageHeader title={`${p.person.surname}, ${p.person.otherNames}`} subtitle={`${p.prisonerNumber} · ${e.facility.name}`}><span className="flex gap-2"><Badge>{e.classification}</Badge><Badge>{e.status}</Badge></span></PageHeader>
       <Flash sp={sp} />
       {(pendingTransfer || pendingRelease) && <p className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">

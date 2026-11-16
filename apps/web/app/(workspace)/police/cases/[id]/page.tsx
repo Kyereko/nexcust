@@ -10,7 +10,7 @@ export default async function CaseDetail({ params, searchParams }: { params: Pro
   const c = await api<any>(`/police/cases/${id}`);
   return (
     <>
-      <Link href="/police/cases" className="text-sm text-blue-700 hover:underline">← Cases & investigations</Link>
+      <Link href="/police/cases" className="text-sm text-brand hover:underline">← Cases & investigations</Link>
       <PageHeader title={c.caseNumber} subtitle={c.title}><Badge>{c.status}</Badge></PageHeader>
       <Flash sp={sp} />
       <div className="grid gap-4 lg:grid-cols-2">
@@ -24,7 +24,7 @@ export default async function CaseDetail({ params, searchParams }: { params: Pro
           )}
         </Card>
         <Card className="p-5"><h2 className="mb-3 font-semibold">People linked to the case</h2>
-          <ul className="space-y-1 text-sm">{c.persons.map((p: any) => <li key={p.id}><Badge tone="slate">{p.role}</Badge> <Link prefetch={false} className="text-blue-700 hover:underline" href={`/police/people/${p.person.id}`}>{p.person.surname}, {p.person.otherNames}</Link> <span className="text-slate-500">{p.person.indexNumber}</span></li>)}
+          <ul className="space-y-1 text-sm">{c.persons.map((p: any) => <li key={p.id}><Badge tone="slate">{p.role}</Badge> <Link prefetch={false} className="text-brand hover:underline" href={`/police/people/${p.person.id}`}>{p.person.surname}, {p.person.otherNames}</Link> <span className="text-slate-500">{p.person.indexNumber}</span></li>)}
             {!c.persons.length && <li className="text-slate-500">No persons linked yet.</li>}</ul>
           <h2 className="mb-2 mt-5 font-semibold">Arrests</h2>
           <ul className="space-y-1 text-sm">{c.arrests.map((a: any) => <li key={a.id}>{a.reference} · {fmtDateTime(a.arrestedAt)} · {a.suspectedOffence}</li>)}{!c.arrests.length && <li className="text-slate-500">None recorded.</li>}</ul>

@@ -1,4 +1,4 @@
-import type { Permission } from '@justiceone/contracts';
+import type { Permission } from '@nexcust/contracts';
 
 export interface NavItem { label: string; href: string; permission?: Permission; planned?: string }
 
@@ -26,10 +26,10 @@ export const NAV: Record<string, { title: string; accent: string; items: NavItem
     { label: 'Reports & Analytics', href: '/prisons/reports', permission: 'prisons.dashboard.read' },
     { label: 'Administration', href: '/prisons/administration' },
   ] },
-  admin: { title: 'PLATFORM', accent: 'bg-neutralws', items: [
+  admin: { title: 'PLATFORM', accent: 'bg-brand', items: [
     { label: 'Users & Roles', href: '/admin', permission: 'platform.users.manage' },
     { label: 'Audit Trail', href: '/audit', permission: 'audit.read' },
   ] },
-  audit: { title: 'AUDIT', accent: 'bg-neutralws', items: [{ label: 'Audit Trail', href: '/audit', permission: 'audit.read' }] },
-  applicant: { title: 'APPLICANT', accent: 'bg-neutralws', items: [{ label: 'My Applications', href: '/applicant' }] },
+  audit: { title: 'AUDIT', accent: 'bg-brand', items: [{ label: 'Audit Trail', href: '/audit', permission: 'audit.read' }] },
+  applicant: { title: 'APPLICANT', accent: 'bg-brand', items: [{ label: 'My Applications', href: '/applicant' }] },
 };

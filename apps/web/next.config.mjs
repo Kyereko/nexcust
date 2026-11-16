@@ -2,7 +2,7 @@
 const api = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 export default {
   poweredByHeader: false,
-  transpilePackages: ['@justiceone/contracts'],
+  transpilePackages: ['@nexcust/contracts'],
   // Same-origin proxy: the browser only ever talks to the web origin, so the session cookie is first-party.
   async rewrites() { return [{ source: '/api/:path*', destination: `${api}/api/:path*` }]; },
   async headers() {

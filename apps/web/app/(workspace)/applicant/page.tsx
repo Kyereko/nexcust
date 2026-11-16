@@ -13,7 +13,7 @@ export default async function Applicant({ searchParams }: { searchParams: Promis
       <Flash sp={sp} />
       <p className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">Demonstration only. To obtain a real police clearance certificate, use the Ghana Police Service&apos;s official online service. Do not enter real personal information here.</p>
       <Table head={['Reference', 'Name', 'Purpose', 'Submitted', 'Status']} empty={!rows.length}>
-        {rows.map((a) => <tr key={a.id}><td><Link prefetch={false} className="font-medium text-slate-900 underline" href={`/applicant/${a.id}`}>{a.reference}</Link></td><td>{a.fullName}</td><td>{a.purpose}</td><td className="whitespace-nowrap">{fmtDateTime(a.submittedAt)}</td><td><Badge tone={applicantTone(a.status)}>{applicantStatus(a.status)}</Badge></td></tr>)}
+        {rows.map((a) => <tr key={a.id}><td><Link prefetch={false} className="font-medium text-ink underline" href={`/applicant/${a.id}`}>{a.reference}</Link></td><td>{a.fullName}</td><td>{a.purpose}</td><td className="whitespace-nowrap">{fmtDateTime(a.submittedAt)}</td><td><Badge tone={applicantTone(a.status)}>{applicantStatus(a.status)}</Badge></td></tr>)}
       </Table>
       <Card className="mt-6 p-5"><h2 className="mb-3 font-semibold">New application</h2>
         <form action={apply} className="grid gap-4 md:grid-cols-2">

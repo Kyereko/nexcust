@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 /**
- * JusticeOne Ghana — synthetic DEMONSTRATION seed.
+ * NEXCUST — synthetic DEMONSTRATION seed.
  *  - Institutional reference data comes from reference/ghana-reference.ts (evidence-tagged).
  *  - Everything operational (people, officers, cases, custody) is SYNTHETIC: generated from a
  *    fixed PRNG, flagged isSynthetic, and prefixed DEMO- so it cannot be mistaken for a real record.
@@ -8,7 +8,7 @@
  */
 import { PrismaClient, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import { PERMISSIONS, ROLES } from '@justiceone/contracts';
+import { PERMISSIONS, ROLES } from '@nexcust/contracts';
 import { hashPassword } from '../src/password';
 import * as REF from '../reference/ghana-reference';
 
@@ -42,10 +42,10 @@ function name() {
 async function main() {
   if (await prisma.institution.count()) {
     await syncRbac();
-    console.log('Database already seeded — roles and permissions synchronised with @justiceone/contracts (use `pnpm db:reset` to rebuild data).');
+    console.log('Database already seeded — roles and permissions synchronised with @nexcust/contracts (use `pnpm db:reset` to rebuild data).');
     return;
   }
-  console.log('Seeding JusticeOne DEMONSTRATION data…');
+  console.log('Seeding NEXCUST DEMONSTRATION data…');
   // ── institutions & reference data ──
   const inst = {
     POLICE: await prisma.institution.create({ data: { code: 'POLICE', name: 'Ghana Police Service (demonstration)' } }),
@@ -125,28 +125,28 @@ async function main() {
   const passwordHash = await hashPassword(DEMO_PASSWORD);
   const accraStation = stations[0]; const kumasiStation = stations[4]; const ashPrison = prisons[0]; const northPrison = prisons[2];
   const demoUsers: Array<[email: string, name: string, role: string, unit: Unit | null]> = [
-    ['admin@justiceone.demo', 'Demo Platform Administrator', 'PLATFORM_ADMIN', null],
-    ['police.national@justiceone.demo', 'Demo Police National Administrator', 'POLICE_NATIONAL_ADMIN', policeHQ],
-    ['police.regional@justiceone.demo', 'Demo Regional Commander (Accra)', 'POLICE_REGIONAL_COMMANDER', accraStation.region],
-    ['police.station@justiceone.demo', `Demo Station Commander (${accraStation.unit.name})`, 'POLICE_STATION_COMMANDER', accraStation.unit],
-    ['police.records@justiceone.demo', `Demo Records Officer (${accraStation.unit.name})`, 'POLICE_RECORDS_OFFICER', accraStation.unit],
-    ['police.records.kumasi@justiceone.demo', `Demo Records Officer (${kumasiStation.unit.name})`, 'POLICE_RECORDS_OFFICER', kumasiStation.unit],
-    ['police.hr@justiceone.demo', 'Demo Police HR Officer', 'POLICE_HR_OFFICER', policeHQ],
-    ['police.bgcheck@justiceone.demo', 'Demo Background Check Officer', 'BACKGROUND_CHECK_OFFICER', policeHQ],
-    ['prisons.national@justiceone.demo', 'Demo Prisons National Administrator', 'PRISONS_NATIONAL_ADMIN', prisonsHQ],
-    ['prisons.superintendent@justiceone.demo', `Demo Officer-in-Charge (${ashPrison.unit.name})`, 'PRISON_SUPERINTENDENT', ashPrison.unit],
-    ['prisons.records@justiceone.demo', `Demo Records Officer (${ashPrison.unit.name})`, 'PRISON_RECORDS_OFFICER', ashPrison.unit],
-    ['prisons.records.north@justiceone.demo', `Demo Records Officer (${northPrison.unit.name})`, 'PRISON_RECORDS_OFFICER', northPrison.unit],
-    ['prisons.hr@justiceone.demo', 'Demo Prison HR Officer', 'PRISON_HR_OFFICER', prisonsHQ],
-    ['auditor@justiceone.demo', 'Demo Auditor', 'AUDITOR', null],
-    ['applicant@justiceone.demo', 'Demo Public Applicant', 'PUBLIC_APPLICANT', null],
+    ['admin@nexcust.demo', 'Demo Platform Administrator', 'PLATFORM_ADMIN', null],
+    ['police.national@nexcust.demo', 'Demo Police National Administrator', 'POLICE_NATIONAL_ADMIN', policeHQ],
+    ['police.regional@nexcust.demo', 'Demo Regional Commander (Accra)', 'POLICE_REGIONAL_COMMANDER', accraStation.region],
+    ['police.station@nexcust.demo', `Demo Station Commander (${accraStation.unit.name})`, 'POLICE_STATION_COMMANDER', accraStation.unit],
+    ['police.records@nexcust.demo', `Demo Records Officer (${accraStation.unit.name})`, 'POLICE_RECORDS_OFFICER', accraStation.unit],
+    ['police.records.kumasi@nexcust.demo', `Demo Records Officer (${kumasiStation.unit.name})`, 'POLICE_RECORDS_OFFICER', kumasiStation.unit],
+    ['police.hr@nexcust.demo', 'Demo Police HR Officer', 'POLICE_HR_OFFICER', policeHQ],
+    ['police.bgcheck@nexcust.demo', 'Demo Background Check Officer', 'BACKGROUND_CHECK_OFFICER', policeHQ],
+    ['prisons.national@nexcust.demo', 'Demo Prisons National Administrator', 'PRISONS_NATIONAL_ADMIN', prisonsHQ],
+    ['prisons.superintendent@nexcust.demo', `Demo Officer-in-Charge (${ashPrison.unit.name})`, 'PRISON_SUPERINTENDENT', ashPrison.unit],
+    ['prisons.records@nexcust.demo', `Demo Records Officer (${ashPrison.unit.name})`, 'PRISON_RECORDS_OFFICER', ashPrison.unit],
+    ['prisons.records.north@nexcust.demo', `Demo Records Officer (${northPrison.unit.name})`, 'PRISON_RECORDS_OFFICER', northPrison.unit],
+    ['prisons.hr@nexcust.demo', 'Demo Prison HR Officer', 'PRISON_HR_OFFICER', prisonsHQ],
+    ['auditor@nexcust.demo', 'Demo Auditor', 'AUDITOR', null],
+    ['applicant@nexcust.demo', 'Demo Public Applicant', 'PUBLIC_APPLICANT', null],
   ];
   const userId: Record<string, string> = {};
   for (const [email, displayName, role, unit] of demoUsers) {
     userId[email] = (await prisma.user.create({ data: { email, displayName, passwordHash, roleAssignments: { create: { roleId: roleId[role], orgUnitId: unit?.id ?? null } } } })).id;
   }
-  const polRec = userId['police.records@justiceone.demo']; const polCmd = userId['police.station@justiceone.demo'];
-  const priRec = userId['prisons.records@justiceone.demo']; const priSup = userId['prisons.superintendent@justiceone.demo'];
+  const polRec = userId['police.records@nexcust.demo']; const polCmd = userId['police.station@nexcust.demo'];
+  const priRec = userId['prisons.records@nexcust.demo']; const priSup = userId['prisons.superintendent@nexcust.demo'];
 
   // ── National Person Index: 1,000 synthetic people ──
   const persons: Prisma.PersonCreateManyInput[] = []; const idents: Prisma.PersonIdentifierCreateManyInput[] = [];
@@ -229,7 +229,7 @@ async function main() {
   await prisma.rehabilitationProgramme.createMany({ data: programmes }); await prisma.rehabilitationEnrollment.createMany({ data: enrollments });
 
   // ── Background-check applications (internal case-processing demo; not a replacement for the official e-service) ──
-  const applicant = userId['applicant@justiceone.demo'];
+  const applicant = userId['applicant@nexcust.demo'];
   const statuses = ['SUBMITTED', 'SUBMITTED', 'VALIDATED', 'IDENTITY_VERIFIED', 'RECORDS_SEARCHED', 'UNDER_REVIEW', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'SUBMITTED'] as const;
   await prisma.backgroundCheckApplication.createMany({ data: statuses.map((status, i) => { const p = persons[700 + i]; return { reference: `DEMO-BGC-${pad(i + 1, 5)}`, applicantUserId: applicant, personId: status === 'SUBMITTED' ? null : p.id!, fullName: `${p.otherNames} ${p.surname}`, dateOfBirth: p.dateOfBirth as Date, identifierType: 'GHANA_CARD' as const, identifierValue: `DEMO-GHA-${pad(701 + i, 9)}-0`, purpose: pick(['Employment', 'Travel / visa', 'Education']), status, submittedAt: daysAgo(10 - i) }; }) });
 

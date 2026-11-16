@@ -4,7 +4,7 @@ Base path `/api`. Interactive documentation: `/api/docs` (OpenAPI). Authenticati
 
 Status codes: `401` no session · `403` refused (always audited) · `404` not found · `400` validation · `429` rate limit.
 
-## 1. Implemented (Days 1–3)
+## 1. Implemented (Days 1–4)
 
 | Method & path | Permission | Jurisdiction applied | Audited |
 |---|---|---|---|
@@ -50,22 +50,25 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `POST /prisons/releases/:id/approve` · `/reject` | `prisons.release.approve` | subtree; not the initiator | yes; approval completes release and closes custody |
 | `GET /prisons/rehabilitation`, `POST /prisons/rehabilitation/enrollments` | `prisons.rehab.read` / `.write` | subtree; programme at the prisoner's establishment | yes |
 | `GET /prisons/personnel/:id`, `/prisons/org-units`, `/prisons/postings` and `POST /prisons/postings…` | as the police equivalents | as police | yes |
+| `GET /police/reports` · `GET /prisons/reports` | `police.dashboard.read` · `prisons.dashboard.read` | roll-up by regional command in subtree (own unit below regional level) | — |
+| `GET /police/background-checks`, `GET /police/background-checks/:id` | `police.bgcheck.read` | national | detail views |
+| `POST /police/background-checks/:id/advance` | `police.bgcheck.review` | stage order enforced: VALIDATED → IDENTITY_VERIFIED → RECORDS_SEARCHED → UNDER_REVIEW | yes |
+| `POST /police/background-checks/:id/decision` | `police.bgcheck.approve` | not any officer who processed the application | yes; approval issues the certificate |
+| `GET/POST /applicant/background-checks`, `GET /applicant/background-checks/:id` | `applicant.bgcheck.submit` | own applications only; coarse status, no internal findings | submission |
+| `GET /verify/:code` | public, 30/min per IP | returns authenticity, status and what is printed on the certificate | every check |
+| `POST /exchange/requests` | `exchange.request` | other institution only; purpose and legal basis mandatory; fixed minimal summary | yes |
+| `GET /exchange/requests/:id` | `exchange.request` | requester only | — |
 | `GET /admin/users` | `platform.users.manage` | platform | — |
 | `GET /audit/events` | `audit.read` | all (auditor, platform) or own institution | — |
 
-## 2. Contracted for Day 4 (not yet implemented)
+## 2. Disclosure rules (demonstration assumptions, to be confirmed)
 
-Every state-changing endpoint writes an audit event. "Maker–checker" means the approver must be a different user from the initiator.
-
-| Day | Method & path | Permission | Notes |
-|---|---|---|---|
-| 4 | `POST /applicant/background-checks`, `GET …/mine` | `applicant.bgcheck.submit` | Own records only |
-| 4 | `GET /police/background-checks`, `POST …/:id/advance` | `police.bgcheck.read` / `.review` | Stage transitions with findings |
-| 4 | `POST /police/background-checks/:id/decision` | `police.bgcheck.approve` | Human decision; issues sample certificate |
-| 4 | `GET /verify/:code` | public (rate-limited) | Returns validity only, no personal record |
-| 4 | `POST /exchange/requests` | `exchange.request` | Purpose + legal basis; minimal disclosure; logged |
-
-Open contract question: no demo role currently holds `police.bgcheck.approve`. Recommended: a separate approving officer role, so the reviewer cannot approve their own review.
+| Channel | Discloses | Never discloses |
+|---|---|---|
+| Clearance records search | Court-recorded convictions | Arrests, charges, custody, case narrative |
+| Police → prisons exchange | Police custody episodes: reference, station, status, dates | Suspected offence, legal-authority text, cell, disposition note |
+| Prisons → police exchange | Whether and where held: establishment, status, classification, dates | Sentence, offence |
+| Certificate verification | Certificate number, status, holder, date of birth, purpose, printed result, dates | Anything not printed on the certificate |
 
 ## 3. Roles
 
@@ -97,7 +100,7 @@ Open contract question: no demo role currently holds `police.bgcheck.approve`. R
 | `person.read` |  | ● | ● | ● | ● |  | ● | ● | ● | ● |  |  |  |
 | `person.write` |  |  |  |  | ● |  |  |  |  | ● |  |  |  |
 | `person.identity.amend` |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| `exchange.request` |  | ● |  |  |  |  |  | ● |  |  |  |  |  |
+| `exchange.request` |  | ● |  |  | ● |  |  | ● |  | ● |  |  |  |
 | `police.dashboard.read` |  | ● | ● | ● | ● | ● | ● |  |  |  |  |  |  |
 | `police.custody.read` |  | ● | ● | ● | ● |  |  |  |  |  |  |  |  |
 | `police.custody.write` |  |  |  |  | ● |  |  |  |  |  |  |  |  |
@@ -110,7 +113,7 @@ Open contract question: no demo role currently holds `police.bgcheck.approve`. R
 | `police.facility.read` |  | ● | ● | ● | ● | ● |  |  |  |  |  |  |  |
 | `police.bgcheck.read` |  | ● |  |  |  |  | ● |  |  |  |  |  |  |
 | `police.bgcheck.review` |  |  |  |  |  |  | ● |  |  |  |  |  |  |
-| `police.bgcheck.approve` |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| `police.bgcheck.approve` |  | ● |  |  |  |  |  |  |  |  |  |  |  |
 | `prisons.dashboard.read` |  |  |  |  |  |  |  | ● | ● | ● | ● |  |  |
 | `prisons.prisoner.read` |  |  |  |  |  |  |  | ● | ● | ● |  |  |  |
 | `prisons.prisoner.write` |  |  |  |  |  |  |  |  |  | ● |  |  |  |

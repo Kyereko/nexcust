@@ -18,14 +18,14 @@ export default async function PoliceDashboard() {
         <Stat label="Active personnel" value={d.personnel} />
       </div>
       <Card className="mt-6 p-5">
-        <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Custody by station</h2><Link href="/police/custody?status=IN_CUSTODY" className="text-sm text-blue-700 hover:underline">View custody register →</Link></div>
+        <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Custody by station</h2><Link href="/police/custody?status=IN_CUSTODY" className="text-sm text-brand hover:underline">View custody register →</Link></div>
         <ul className="space-y-2">
           {d.custodyByStation.map((s) => {
             const pct = s.capacity ? Math.min(100, Math.round((s.inCustody / s.capacity) * 100)) : 0;
             return (
               <li key={s.id} className="grid grid-cols-[14rem_1fr_5rem] items-center gap-3 text-sm">
                 <span className="truncate">{s.name}</span>
-                <span className="h-2 rounded bg-slate-100"><span className="block h-2 rounded bg-police" style={{ width: `${pct}%` }} /></span>
+                <span className="h-2 rounded bg-white ring-1 ring-line"><span className="block h-2 rounded bg-chart" style={{ width: `${pct}%` }} /></span>
                 <span className="text-right tabular-nums text-slate-600">{s.inCustody} / {s.capacity ?? '—'}</span>
               </li>
             );

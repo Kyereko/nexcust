@@ -67,7 +67,8 @@ export class PoliceController {
     const total = rows.reduce((t, r) => ({ stations: t.stations + r.stations, inCustody: t.inCustody + r.inCustody, pastDeadline: t.pastDeadline + r.pastDeadline, arrests30d: t.arrests30d + r.arrests30d,
       custodyClosed30d: t.custodyClosed30d + r.custodyClosed30d, openCases: t.openCases + r.openCases, personnel: t.personnel + r.personnel }),
       { stations: 0, inCustody: 0, pastDeadline: 0, arrests30d: 0, custodyClosed30d: 0, openCases: 0, personnel: 0 });
-    return { generatedAt: now, rows, total, arrestsByMonth: tally(trend.map((t) => t.arrestedAt), months) };
+    // Officers at headquarters and directorates belong to no regional command; report them separately so totals reconcile with the dashboard.
+    return { generatedAt: now, rows, total, personnelOutsideCommands: personnel.length - total.personnel, arrestsByMonth: tally(trend.map((t) => t.arrestedAt), months) };
   }
 
   @Get('custody')

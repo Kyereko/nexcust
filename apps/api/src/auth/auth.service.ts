@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHash, randomBytes } from 'crypto';
-import { verifyPassword } from '@justiceone/database';
-import type { Permission, SessionUser } from '@justiceone/contracts';
+import { verifyPassword } from '@nexcust/database';
+import type { Permission, SessionUser } from '@nexcust/contracts';
 import { PrismaService } from '../prisma/prisma.module';
 import { AuthContext, Grant } from '../common/access';
 
@@ -15,7 +15,7 @@ const DUMMY_HASH = 'scrypt$16384$8$1$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAA
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
-  get cookieName() { return process.env.SESSION_COOKIE_NAME ?? 'j1_session'; }
+  get cookieName() { return process.env.SESSION_COOKIE_NAME ?? 'nx_session'; }
   get ttlMs() { return Number(process.env.SESSION_TTL_HOURS ?? 8) * 3600_000; }
 
   /** Returns a raw session token on success; null on any failure (caller responds generically). */

@@ -1,5 +1,5 @@
 {
-  "name": "@justiceone/web",
+  "name": "@nexcust/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,7 @@
     "e2e": "playwright test --trace off"
   },
   "dependencies": {
-    "@justiceone/contracts": "workspace:*",
+    "@nexcust/contracts": "workspace:*",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

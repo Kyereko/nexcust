@@ -1,4 +1,4 @@
-name: JusticeOne CI
+name: NEXCUST CI
 on:
   push: { branches: [main] }
   pull_request:
@@ -8,12 +8,12 @@ jobs:
     services:
       postgres:
         image: postgres:16
-        env: { POSTGRES_USER: justiceone, POSTGRES_PASSWORD: justiceone, POSTGRES_DB: justiceone_test }
+        env: { POSTGRES_USER: nexcust, POSTGRES_PASSWORD: nexcust, POSTGRES_DB: nexcust_test }
         ports: ["5432:5432"]
-        options: --health-cmd "pg_isready -U justiceone" --health-interval 5s --health-timeout 3s --health-retries 10
+        options: --health-cmd "pg_isready -U nexcust" --health-interval 5s --health-timeout 3s --health-retries 10
     env:
-      DATABASE_URL: postgresql://justiceone:justiceone@localhost:5432/justiceone_test?schema=public
-      DATABASE_URL_TEST: postgresql://justiceone:justiceone@localhost:5432/justiceone_test?schema=public
+      DATABASE_URL: postgresql://nexcust:nexcust@localhost:5432/nexcust_test?schema=public
+      DATABASE_URL_TEST: postgresql://nexcust:nexcust@localhost:5432/nexcust_test?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -24,4 +24,4 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm db:migrate && pnpm db:seed
-      - run: pnpm --filter @justiceone/api test
+      - run: pnpm --filter @nexcust/api test

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDateTime, getSession, qs } from '@/lib/api';
 import { Badge, LinkButton, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
 
@@ -20,7 +20,7 @@ export default async function CustodyRegister({ searchParams }: { searchParams: 
           const overdue = r.status === 'IN_CUSTODY' && r.courtDeadlineAt && new Date(r.courtDeadlineAt).getTime() < now;
           return (
             <tr key={r.id} className="hover:bg-slate-50">
-              <td><Link className="font-medium text-blue-700 hover:underline" href={`/police/custody/${r.id}`}>{r.reference}</Link></td>
+              <td><Link className="font-medium text-brand hover:underline" href={`/police/custody/${r.id}`}>{r.reference}</Link></td>
               <td>{r.person.surname}, {r.person.otherNames}<div className="text-xs text-slate-500">{r.person.indexNumber}</div></td>
               <td>{r.arrest.suspectedOffence}</td><td>{r.facility.name}</td><td className="whitespace-nowrap">{fmtDateTime(r.detainedAt)}</td>
               <td className={`whitespace-nowrap ${overdue ? 'font-semibold text-red-700' : ''}`}>{fmtDateTime(r.courtDeadlineAt)}{overdue ? ' · overdue' : ''}</td>

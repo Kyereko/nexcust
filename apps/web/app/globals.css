@@ -1,12 +1,23 @@
 @import "tailwindcss";
 
+/*
+ * NEXCUST design standard — minimalist gold and green.
+ * Green carries the identity; gold is a sparing accent (never body text: 2.35:1 on warm white).
+ * Status colours (emerald/amber/red) are reserved for state and are not brand colours.
+ */
 @theme {
-  --color-ink: #0f172a;
-  --color-police: #1e3a8a;
-  --color-prisons: #14532d;
-  --color-neutralws: #334155;
+  --color-brand: #174D38;        /* Deep Forest Green — primary, navigation, headings */
+  --color-brand-hover: #123E2D;
+  --color-gold: #C5A34A;         /* Muted Gold — logo accent, selected elements, highlights */
+  --color-canvas: #FAFAF7;       /* Warm White — main background */
+  --color-surface: #F2F3F0;      /* Soft Gray — cards and secondary surfaces */
+  --color-line: #E3E5DF;         /* hairlines on warm surfaces */
+  --color-ink: #252525;          /* Charcoal — text */
+  --color-sage: #E8F0E9;         /* Soft Sage — subtle highlights */
+  --color-chart: #1E7B57;        /* chart marks: brand-family green validated for data marks */
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-body { background: #f1f5f9; color: var(--color-ink); }
+body { background: var(--color-canvas); color: var(--color-ink); }
 table { border-collapse: collapse; }
+:focus-visible { outline: 2px solid var(--color-gold); outline-offset: 2px; }

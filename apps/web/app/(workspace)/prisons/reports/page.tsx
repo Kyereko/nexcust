@@ -16,8 +16,8 @@ export default async function PrisonsReports() {
         {r.rows.length > 1 && <tr className="bg-slate-50 font-semibold"><td>Total</td>{cols.map(([k]) => <td key={k} className="tabular-nums">{cell(k, r.total[k])}</td>)}</tr>}
       </Table>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <BarChart title="Admissions per month" color="#15803d" max={max} data={r.byMonth.map((m: any) => ({ label: monthLabel(m.month), value: m.admissions }))} />
-        <BarChart title="Releases per month" color="#15803d" max={max} data={r.byMonth.map((m: any) => ({ label: monthLabel(m.month), value: m.releases }))} />
+        <BarChart title="Admissions per month" color="#1E7B57" max={max} data={r.byMonth.map((m: any) => ({ label: monthLabel(m.month), value: m.admissions }))} />
+        <BarChart title="Releases per month" color="#1E7B57" max={max} data={r.byMonth.map((m: any) => ({ label: monthLabel(m.month), value: m.releases }))} />
       </div>
       <p className="mt-4 text-xs text-slate-500">Both charts share one scale so the months can be compared directly.</p>
     </>

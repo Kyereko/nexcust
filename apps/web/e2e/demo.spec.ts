@@ -15,7 +15,7 @@ test('unauthenticated visitors are sent to sign-in and see the demonstration ban
 });
 
 test('police login opens the police workspace with live dashboard figures', async ({ page }) => {
-  await signIn(page, 'police.national@justiceone.demo');
+  await signIn(page, 'police.national@nexcust.demo');
   await expect(page).toHaveURL(/\/police$/);
   await expect(page.getByRole('heading', { name: 'Police dashboard' })).toBeVisible();
   await expect(page.getByText('In police custody')).toBeVisible();
@@ -26,7 +26,7 @@ test('police login opens the police workspace with live dashboard figures', asyn
 });
 
 test('prison login opens the prisons workspace and the registry is searchable', async ({ page }) => {
-  await signIn(page, 'prisons.records@justiceone.demo');
+  await signIn(page, 'prisons.records@nexcust.demo');
   await expect(page).toHaveURL(/\/prisons$/);
   await expect(page.getByRole('heading', { name: 'Prisons dashboard' })).toBeVisible();
   await page.getByRole('link', { name: 'Prisoner Registry' }).click();
@@ -37,7 +37,7 @@ test('prison login opens the prisons workspace and the registry is searchable', 
 });
 
 test('a station officer sees only their own station', async ({ page }) => {
-  await signIn(page, 'police.records@justiceone.demo');
+  await signIn(page, 'police.records@nexcust.demo');
   await expect(page.getByRole('heading', { name: 'Police dashboard' })).toBeVisible();
   await page.getByRole('link', { name: 'Stations & Commands' }).click();
   await expect(page.getByRole('heading', { name: 'Stations & commands' })).toBeVisible();
@@ -45,22 +45,22 @@ test('a station officer sees only their own station', async ({ page }) => {
 });
 
 test('cross-institution access is denied and appears in the audit trail', async ({ page }) => {
-  await signIn(page, 'prisons.records@justiceone.demo');
+  await signIn(page, 'prisons.records@nexcust.demo');
   await expect(page).toHaveURL(/\/prisons$/);
   await page.goto('/police/custody');
   await expect(page.getByRole('heading', { name: 'Access denied' })).toBeVisible();
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login/);
-  await signIn(page, 'auditor@justiceone.demo');
+  await signIn(page, 'auditor@nexcust.demo');
   await expect(page).toHaveURL(/\/audit$/);
-  await page.getByLabel('Search').fill('prisons.records@justiceone.demo');
+  await page.getByLabel('Search').fill('prisons.records@nexcust.demo');
   await page.getByLabel('Status').selectOption('DENIED');
   await page.getByRole('button', { name: 'Search' }).click();
   await expect(page.getByRole('cell', { name: 'access.denied' }).first()).toBeVisible();
 });
 
 test('rank catalogue shows evidence status as reference data', async ({ page }) => {
-  await signIn(page, 'police.hr@justiceone.demo');
+  await signIn(page, 'police.hr@nexcust.demo');
   await expect(page.getByRole('heading', { name: 'Police dashboard' })).toBeVisible();
   await page.getByRole('link', { name: 'Administration' }).click();
   await expect(page).toHaveURL(/\/police\/administration$/);

@@ -10,7 +10,7 @@ export default async function CustodyDetail({ params, searchParams }: { params: 
   const overdue = open && e.courtDeadlineAt && new Date(e.courtDeadlineAt).getTime() < Date.now();
   return (
     <>
-      <Link href="/police/custody" className="text-sm text-blue-700 hover:underline">← Custody register</Link>
+      <Link href="/police/custody" className="text-sm text-brand hover:underline">← Custody register</Link>
       <PageHeader title={`Custody episode ${e.reference}`} subtitle={e.facility.name}><Badge>{e.status}</Badge></PageHeader>
       <Flash sp={sp} />
       {overdue && <p className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">Held beyond the configured court deadline ({fmtDateTime(e.courtDeadlineAt)}). Refer to the authorizing officer.</p>}

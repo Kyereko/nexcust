@@ -1,5 +1,5 @@
 {
-  "name": "@justiceone/api",
+  "name": "@nexcust/api",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,8 +10,8 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@justiceone/contracts": "workspace:*",
-    "@justiceone/database": "workspace:*",
+    "@nexcust/contracts": "workspace:*",
+    "@nexcust/database": "workspace:*",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",

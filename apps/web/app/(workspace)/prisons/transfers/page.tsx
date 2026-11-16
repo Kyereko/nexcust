@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Paginated } from '@justiceone/contracts';
+import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDateTime, getSession, qs } from '@/lib/api';
 import { Badge, Button, Flash, PageHeader, Table } from '@/components/ui';
 import { decide } from '../actions';
@@ -11,7 +11,7 @@ function Act({ kind, id, decision, label, tone }: { kind: string; id: string; de
 export default async function TransfersReleases({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams; const user = (await getSession())!; const can = (p: string) => user.permissions.includes(p as never);
   const [transfers, releases] = await Promise.all([api<Paginated<any>>(`/prisons/transfers${qs({ pageSize: '50' })}`), api<Paginated<any>>(`/prisons/releases${qs({ pageSize: '50' })}`)]);
-  const name = (r: any) => <><Link prefetch={false} className="font-medium text-green-800 hover:underline" href={`/prisons/prisoners/${r.episode.id}`}>{r.episode.prisonerRecord.prisonerNumber}</Link><div className="text-xs text-slate-500">{r.episode.prisonerRecord.person.surname}, {r.episode.prisonerRecord.person.otherNames}</div></>;
+  const name = (r: any) => <><Link prefetch={false} className="font-medium text-brand hover:underline" href={`/prisons/prisoners/${r.episode.id}`}>{r.episode.prisonerRecord.prisonerNumber}</Link><div className="text-xs text-slate-500">{r.episode.prisonerRecord.person.surname}, {r.episode.prisonerRecord.person.otherNames}</div></>;
   return (
     <>
       <PageHeader title="Transfers & releases" subtitle="Initiated by records staff · authorized by a second officer · transfers confirmed by the receiving establishment" />

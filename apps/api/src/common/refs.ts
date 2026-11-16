@@ -1,4 +1,4 @@
-import { PrismaClient } from '@justiceone/database';
+import { PrismaClient } from '@nexcust/database';
 
 type Seq = 'person' | 'arrest' | 'custody' | 'case' | 'incident' | 'prison' | 'bgcheck';
 
