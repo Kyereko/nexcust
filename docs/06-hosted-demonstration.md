@@ -20,7 +20,7 @@ Browser ── https://nexcust.fourthit.com ──▶ Vercel project nexcust-web
 | Item | Value |
 |---|---|
 | Public address | `https://nexcust.fourthit.com` (DNS: CNAME `nexcust` → `cname.vercel-dns.com` in AWS Route 53) |
-| Access | 1) password prompt for the whole site (`DEMO_GATE_USER` / `DEMO_GATE_PASSWORD`), 2) NEXCUST sign-in |
+| Access | NEXCUST sign-in. An optional site-wide password prompt exists (`DEMO_GATE_ENABLED=true` plus `DEMO_GATE_USER` / `DEMO_GATE_PASSWORD`); it is switched off |
 | `*.vercel.app` URLs | Web: Vercel login required. API: unusable without the gateway secret |
 | Database connections | Runtime: Supavisor transaction pooler (6543). Migrations: session pooler (5432) via `DIRECT_URL` |
 | Deploys | Every push to `main` on `Kyereko/nexcust`. The API build applies migrations and seeds synthetic data if the database is empty (otherwise only re-syncs roles and permissions) |

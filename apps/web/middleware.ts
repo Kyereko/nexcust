@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * 1. Private-demo gate: when DEMO_GATE_PASSWORD is set, every page and API call needs HTTP Basic credentials
- *    (in addition to NEXCUST's own sign-in). Unset locally.
+ * 1. Optional site-wide password gate: active only when DEMO_GATE_ENABLED=true and DEMO_GATE_PASSWORD is set
+ *    (HTTP Basic credentials in addition to NEXCUST's own sign-in). Off by default.
  * 2. API proxy: /api/* is forwarded to the API with the gateway secret and the real client IP, so the
  *    browser only ever talks to this origin (first-party session cookie, no CORS surface).
  */
@@ -10,7 +10,7 @@ const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 
 function gateOk(req: NextRequest): boolean {
   const password = process.env.DEMO_GATE_PASSWORD;
-  if (!password) return true;
+  if (process.env.DEMO_GATE_ENABLED !== 'true' || !password) return true;
   const header = req.headers.get('authorization') ?? '';
   if (!header.startsWith('Basic ')) return false;
   let decoded = '';
