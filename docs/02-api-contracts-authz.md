@@ -22,7 +22,7 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `GET /police/stations` | `police.facility.read` | unit subtree | — |
 | `POST /persons` | `person.write` | national | creation; duplicate review enforced (409 `POSSIBLE_DUPLICATES` / `IDENTIFIER_EXISTS`) |
 | `GET /police/persons/:id/record` | `police.case.read` | station records by subtree; convictions national | every view |
-| `POST /police/arrests` | `police.custody.write` | station must be in subtree | yes |
+| `POST /police/arrests` | `police.custody.write` | station must be in subtree; arrest basis and rights information (art. 14(2)) required | yes |
 | `POST /police/custody/:id/movements` | `police.custody.write` | subtree | yes |
 | `POST /police/custody/:id/review` | `police.custody.close` | subtree; not the opening officer | yes |
 | `POST /police/custody/:id/close` | `police.custody.close` | subtree; not the opening officer | yes |
@@ -58,6 +58,12 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `GET /verify/:code` | public, 30/min per IP | returns authenticity, status and what is printed on the certificate | every check |
 | `POST /exchange/requests` | `exchange.request` | other institution only; purpose and legal basis mandatory; fixed minimal summary | yes |
 | `GET /exchange/requests/:id` | `exchange.request` | requester only | — |
+| `POST /police/custody/:id/juvenile-notice` | `police.custody.write` | subtree; juvenile episodes only | yes |
+| `POST /prisons/prisoners/:episodeId/remand-renewals` | `prisons.prisoner.write` | subtree; remand prisoner held | yes |
+| `GET /prisons/remand-warrants/attention` | `prisons.prisoner.read` | subtree | — |
+| `POST /prisons/sentences/:id/remission` | `prisons.prisoner.write` | prisoner held in subtree | yes |
+| `POST /prisons/sentences/:id/forfeitures` | `prisons.release.approve` | prisoner held in subtree | yes |
+| `POST /prisons/releases/:id/warrant-returned` | `prisons.prisoner.write` | subtree; completed releases | yes |
 | `GET /admin/users` | `platform.users.manage` | platform | — |
 | `GET /audit/events` | `audit.read` | all (auditor, platform) or own institution | — |
 

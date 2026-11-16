@@ -61,7 +61,10 @@ Delivered with API and browser tests, plus the NEXCUST rename and brand identity
 | ✅ I-03 | Authorized exchange (police remand ↔ prison admission) | P-03, R-01 | Logged, purpose-bound disclosure |
 | ✅ I-04 | Reports and national roll-ups | Days 2–3 | Dashboard reflects saved records |
 
-### Day 5 — Hardening and demonstration
+### Day 5 — Ghana alignment, hosting and demonstration
+- ✅ Process research (docs/research 10–14) and alignment stage 1: custody (rights at arrest, 48 h from arrest, bail bond, juveniles) and prisons (Act 30 warrant forms, gaoler's receipt, remand-warrant expiry, remission, release types, warrant return)
+- ✅ Hosted private demonstration on Vercel + Supabase (docs/06)
+- ◻ Alignment stage 2: police clearance on the eServices portal flow
 - ◻ Full browser run of all twelve acceptance scenarios
 - ◻ Container build verified, demonstration environment deployed over HTTPS
 - ◻ Ghana-context walkthrough against the open-questions list

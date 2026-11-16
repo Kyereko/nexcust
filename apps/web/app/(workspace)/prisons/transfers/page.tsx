@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Paginated } from '@nexcust/contracts';
 import { api, fmtDateTime, getSession, qs } from '@/lib/api';
 import { Badge, Button, Flash, PageHeader, Table } from '@/components/ui';
-import { decide } from '../actions';
+import { decide, warrantReturned } from '../actions';
 
 function Act({ kind, id, decision, label, tone }: { kind: string; id: string; decision: string; label: string; tone?: 'primary' | 'secondary' }) {
   return <form action={decide}><input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={id} /><input type="hidden" name="decision" value={decision} /><Button tone={tone}>{label}</Button></form>;
@@ -30,10 +30,11 @@ export default async function TransfersReleases({ searchParams }: { searchParams
       <h2 className="mb-2 mt-6 font-semibold">Releases</h2>
       <Table head={['Reference', 'Prisoner', 'Establishment', 'Type', 'Legal authority', 'Initiated', 'Status', '']} empty={!releases.items.length}>
         {releases.items.map((r) => (
-          <tr key={r.id}><td className="font-medium">{r.reference}</td><td>{name(r)}</td><td>{r.facility.name}</td><td>{r.type.replace(/_/g, ' ')}</td><td className="max-w-xs text-xs">{r.legalAuthority}</td><td className="whitespace-nowrap">{fmtDateTime(r.createdAt)}</td>
+          <tr key={r.id}><td className="font-medium">{r.reference}</td><td>{name(r)}</td><td>{r.facility.name}</td><td>{r.type.replace(/_/g, ' ').toLowerCase()}{r.warrantReturnedAt ? <div className="text-xs text-slate-500">warrant returned {fmtDateTime(r.warrantReturnedAt)}</div> : null}</td><td className="max-w-xs text-xs">{r.legalAuthority}</td><td className="whitespace-nowrap">{fmtDateTime(r.createdAt)}</td>
             <td><Badge tone={r.status === 'INITIATED' ? 'amber' : r.status === 'COMPLETED' ? 'green' : undefined}>{r.status}</Badge></td>
             <td><div className="flex justify-end gap-2">
               {r.status === 'INITIATED' && can('prisons.release.approve') && <><Act kind="release" id={r.id} decision="approve" label="Authorize release" /><Act kind="release" id={r.id} decision="reject" label="Reject" tone="secondary" /></>}
+              {r.status === 'COMPLETED' && !r.warrantReturnedAt && can('prisons.prisoner.write') && <form action={warrantReturned}><input type="hidden" name="id" value={r.id} /><Button tone="secondary">Warrant returned to court</Button></form>}
             </div></td></tr>
         ))}
       </Table>

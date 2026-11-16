@@ -7,8 +7,11 @@ const back = (path: string, params: Record<string, string | undefined>) => { con
 
 export async function registerArrest(f: FormData) {
   const personId = s(f, 'personId')!; const at = s(f, 'arrestedAt');
-  const r = await send('POST', '/police/arrests', { personId, facilityId: s(f, 'facilityId'), arrestedAt: at ? new Date(`${at}:00Z`).toISOString() : undefined, // Ghana is GMT year-round
-    suspectedOffence: s(f, 'suspectedOffence'), legalAuthority: s(f, 'legalAuthority'), location: s(f, 'location'), detain: f.get('detain') === 'on', cellRef: s(f, 'cellRef') });
+  const iso = (k: string) => { const v = s(f, k); return v ? new Date(`${v}:00Z`).toISOString() : undefined; }; // Ghana is GMT year-round
+  const r = await send('POST', '/police/arrests', { personId, facilityId: s(f, 'facilityId'), arrestedAt: iso('arrestedAt'),
+    suspectedOffence: s(f, 'suspectedOffence'), legalAuthority: s(f, 'legalAuthority'), location: s(f, 'location'), detain: f.get('detain') === 'on', cellRef: s(f, 'cellRef'),
+    arrestBasis: s(f, 'arrestBasis'), warrantRef: s(f, 'warrantRef'), reasonsGivenAt: iso('reasonsGivenAt'), rightToLawyerGivenAt: iso('rightToLawyerGivenAt'),
+    languageUsed: s(f, 'languageUsed'), lawyerRequested: f.get('lawyerRequested') === 'on' });
   if (!r.ok) redirect(back('/police/custody/new', { personId, error: r.message }));
   redirect(r.data.custody ? back(`/police/custody/${r.data.custody.id}`, { notice: `Arrest ${r.data.arrest.reference} registered and custody episode opened.` })
     : back(`/police/people/${personId}`, { notice: `Arrest ${r.data.arrest.reference} registered (person not detained).` }));
@@ -23,8 +26,23 @@ export async function reviewCustody(f: FormData) {
   redirect(back(`/police/custody/${id}`, r.ok ? { notice: 'Supervisor review recorded.' } : { error: r.message }));
 }
 export async function closeCustody(f: FormData) {
-  const id = s(f, 'id')!; const r = await send('POST', `/police/custody/${id}/close`, { disposition: s(f, 'disposition'), dispositionNote: s(f, 'dispositionNote') });
+  const id = s(f, 'id')!; const disposition = s(f, 'disposition'); const reportAt = s(f, 'bailReportAt'); const deposit = s(f, 'bailDeposit');
+  const bailBond = disposition === 'RELEASED_ON_BAIL' ? { amountGhs: Number(s(f, 'bailAmount') ?? NaN), reportTo: s(f, 'bailReportTo'), reportPlace: s(f, 'bailReportPlace'),
+    reportAt: reportAt ? new Date(`${reportAt}:00Z`).toISOString() : undefined, depositInLieuGhs: deposit ? Number(deposit) : undefined,
+    sureties: s(f, 'suretyName') ? [{ name: s(f, 'suretyName'), idRef: s(f, 'suretyId'), address: s(f, 'suretyAddress') }] : [] } : undefined;
+  if (bailBond) {
+    const missing = [!s(f, 'bailAmount') && 'bond amount', !reportAt && 'date and time to report', !s(f, 'bailReportPlace') && 'place to report',
+      s(f, 'suretyName') && (!s(f, 'suretyId') || !s(f, 'suretyAddress')) && "surety's ID reference and address"].filter(Boolean);
+    if (missing.length) redirect(back(`/police/custody/${id}`, { error: `Release on bail is recorded as a bond (Act 30 s.15(2)). Please enter: ${missing.join(', ')}.` }));
+  }
+  const r = await send('POST', `/police/custody/${id}/close`, { disposition, dispositionNote: s(f, 'dispositionNote'), bailBond });
   redirect(back(`/police/custody/${id}`, r.ok ? { notice: 'Custody episode closed with authorized disposition.' } : { error: r.message }));
+}
+
+export async function juvenileNotice(f: FormData) {
+  const id = s(f, 'id')!; const at = s(f, 'notifiedAt');
+  const r = await send('POST', `/police/custody/${id}/juvenile-notice`, { parentGuardianNotifiedAt: at ? new Date(`${at}:00Z`).toISOString() : undefined });
+  redirect(back(`/police/custody/${id}`, r.ok ? { notice: 'Parent/guardian notification recorded.' } : { error: r.message }));
 }
 
 export async function createCase(f: FormData) {

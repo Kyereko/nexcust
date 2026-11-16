@@ -78,7 +78,7 @@ export class PoliceController {
     const [items, total] = await Promise.all([
       this.prisma.policeCustodyEpisode.findMany({
         where, orderBy: { detainedAt: 'desc' }, ...paging(q),
-        select: { id: true, reference: true, status: true, detainedAt: true, courtDeadlineAt: true, closedAt: true, cellRef: true,
+        select: { id: true, reference: true, status: true, detainedAt: true, courtDeadlineAt: true, closedAt: true, cellRef: true, isJuvenile: true,
           person: { select: { id: true, indexNumber: true, surname: true, otherNames: true, sex: true } },
           facility: { select: { id: true, name: true } }, arrest: { select: { reference: true, suspectedOffence: true } } },
       }),
@@ -92,7 +92,7 @@ export class PoliceController {
   async custodyDetail(@Req() req: AuthedRequest, @Param('id', ParseUUIDPipe) id: string) {
     const ep = await this.prisma.policeCustodyEpisode.findUnique({
       where: { id },
-      include: { person: { include: { identifiers: true } }, facility: { include: { orgUnit: true } }, arrest: { include: { case: true } }, movements: { orderBy: { occurredAt: 'asc' } } },
+      include: { person: { include: { identifiers: true } }, facility: { include: { orgUnit: true } }, arrest: { include: { case: true } }, movements: { orderBy: { occurredAt: 'asc' } }, bailBond: true },
     });
     if (!ep) throw new NotFoundException();
     if (!inScope(req.scope!, ep.facility.orgUnit.path)) {

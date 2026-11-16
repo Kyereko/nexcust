@@ -46,13 +46,19 @@ export default async function Admissions({ searchParams }: { searchParams: Promi
           <Label text="Establishment"><select name="facilityId" required className={inputCls}>{facilities.map((f) => <option key={f.id} value={f.id}>{f.name} ({f.population}/{f.capacity ?? '—'})</option>)}</select></Label>
           <Label text="Housing unit"><select name="housingUnitId" className={inputCls}><option value="">Assign later</option>{facilities.flatMap((f) => f.housingUnits.map((h: any) => <option key={h.id} value={h.id}>{f.name} — {h.name}</option>))}</select></Label>
           <h2 className="font-semibold md:col-span-2">Legal authority (from the court document)</h2>
-          <Label text="Warrant type"><select name="warrantType" className={inputCls}><option value="REMAND_WARRANT">Remand warrant</option><option value="COMMITTAL_WARRANT">Committal warrant (convicted)</option></select></Label>
+          <Label text="Warrant (Act 30 form)"><select name="warrantType" className={inputCls}><option value="REMAND_COMMITMENT_FOR_TRIAL">Form 14 — Commitment for trial / remand</option><option value="COMMITMENT_TO_UNDERGO_SENTENCE">Form 21 — Commitment to undergo sentence</option><option value="COMMITMENT_ON_DEFAULT_OF_PAYMENT">Form 24 — Commitment on default of payment</option></select></Label>
           <Label text="Issuing court"><input name="court" required minLength={3} maxLength={120} className={inputCls} /></Label>
           <Label text="Warrant reference"><input name="warrantRef" required minLength={3} maxLength={60} className={inputCls} /></Label>
           <Label text="Date issued"><input type="date" name="warrantIssuedAt" required max={today} defaultValue={today} className={inputCls} /></Label>
-          <Label text="Return date (remand)"><input type="date" name="returnDate" className={inputCls} /></Label>
-          <div />
-          <h2 className="font-semibold md:col-span-2">Sentence (committal warrants only — as stated on the warrant)</h2>
+          <Label text="Next court date (remand)" hint="Adults: each remand is limited to 14 clear days. Expired warrants are flagged for follow-up — never released automatically."><input type="date" name="returnDate" className={inputCls} /></Label>
+          <Label text="Issuing judicial officer"><input name="issuingJudicialOfficer" maxLength={120} className={inputCls} /></Label>
+          <h2 className="font-semibold md:col-span-2">Gaoler&apos;s receipt (Form 22)</h2>
+          <Label text="Received from (escorting officer)"><input name="escortingOfficer" required minLength={3} maxLength={120} placeholder="Rank, name, station" className={inputCls} /></Label>
+          <Label text="Condition at handover"><input name="conditionAtHandover" required minLength={2} maxLength={200} placeholder="e.g. Sober, no visible injuries" className={inputCls} /></Label>
+          <h2 className="font-semibold md:col-span-2">Reception medical screening</h2>
+          <Label text="Screened by"><select name="screenedByRole" className={inputCls}><option value="">Not yet screened</option><option value="MEDICAL_OFFICER">Medical Officer</option><option value="PHYSICIAN_ASSISTANT">Physician Assistant</option></select></Label>
+          <div className="flex items-end gap-6 pb-2 text-sm font-medium text-slate-700"><label className="flex items-center gap-2"><input type="checkbox" name="fitForAdmission" defaultChecked className="h-4 w-4" /> Fit for admission</label><label className="flex items-center gap-2"><input type="checkbox" name="infectiousDiseaseFlag" className="h-4 w-4" /> Communicable disease concern</label></div>
+          <h2 className="font-semibold md:col-span-2">Sentence (Forms 21 and 24 — as stated on the warrant)</h2>
           <Label text="Offence"><input name="offence" maxLength={200} className={inputCls} /></Label>
           <Label text="Sentence"><input name="sentenceText" maxLength={300} placeholder="e.g. 24 months imprisonment" className={inputCls} /></Label>
           <Label text="Term (months)"><input type="number" name="termMonths" min={0} max={1200} className={inputCls} /></Label>

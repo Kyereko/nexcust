@@ -142,3 +142,19 @@ Source short keys: **ES** = eservices.police.gov.gh public client bundle (16 Nov
 | Convictions-only disclosure on clearances | Consistent with certificate wording, CDSB convict records and Act 30 s.108(2); widen only on written CID/CDSB instruction |
 | NEXCUST does not replace the eServices clearance portal or CDSB | Both are live official systems (05; 10) |
 | Synthetic data only | No DPC registration, processor contract or DPIA exists for NEXCUST (13) |
+
+## 5. Implementation status (NEXCUST demonstration)
+
+| ID | Status | What was built |
+|---|---|---|
+| K-01 | Done | Arrest basis (warrant / s.10 / s.12), warrant reference, time reasons and right to a lawyer were given, language, lawyer requested |
+| K-03 | Done | 48-hour clock from `arrestedAt`, calendar hours; existing records re-based by migration |
+| K-04 | Done | Police enquiry bail recorded as a bond: amount, sureties, report-to (court/station), place and time, cash deposit in lieu; required for `RELEASED_ON_BAIL` |
+| K-10 | Partial | Juvenile flag from date of birth, 48 h detention-order deadline, parent/guardian notification; identity masking and separate-cell enforcement pending |
+| P-01 | Done | Warrant types aligned to Act 30 Forms 14, 21, 24, 25, 9, s.98 and juvenile detention order, with form number and issuing judicial officer; legacy values migrated |
+| P-02 | Done | Gaoler's receipt (Form 22): escorting officer and condition at handover, required on admission |
+| P-03 | Partial | Reception medical screening (screened by, fit for admission, communicable-disease concern); observation period and rules-read steps pending |
+| P-05 | Done | Remand next court date required; renewals recorded; expired / expiring / over-limit warrants flagged on a dedicated page and dashboard; never auto-release |
+| P-07 | Partial | Sentence start date, officer-determined remission eligibility, forfeiture log by an authorizing officer; no computed release date; indicative calculator not built (off by default per recommendation) |
+| P-08 | Partial | Release types split (s.98 bail order, discharge warrant, end of sentence with remission, art. 72 pardon free/conditional, remission of punishment, amnesty); Discharge Board flag; warrant returned to court after release |
+| C-01 … C-14 | Next | Clearance re-modelled on the eServices portal flow (stage 2) |

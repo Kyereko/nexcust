@@ -19,6 +19,7 @@ export const NAV: Record<string, { title: string; accent: string; items: NavItem
     { label: 'Dashboard', href: '/prisons', permission: 'prisons.dashboard.read' },
     { label: 'Prisoner Registry', href: '/prisons/prisoners', permission: 'prisons.prisoner.read' },
     { label: 'Admissions & Custody', href: '/prisons/admissions', permission: 'prisons.prisoner.write' },
+    { label: 'Remand Warrants', href: '/prisons/remand-warrants', permission: 'prisons.prisoner.read' },
     { label: 'Transfers & Releases', href: '/prisons/transfers', permission: 'prisons.prisoner.read' },
     { label: 'Facilities & Housing', href: '/prisons/facilities', permission: 'prisons.facility.read' },
     { label: 'Personnel & Postings', href: '/prisons/personnel', permission: 'prisons.personnel.read' },

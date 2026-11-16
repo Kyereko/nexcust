@@ -11,6 +11,8 @@ export async function admit(f: FormData) {
   const personId = s(f, 'personId')!; const term = s(f, 'termMonths');
   const r = await send('POST', '/prisons/admissions', {
     personId, facilityId: s(f, 'facilityId'), housingUnitId: s(f, 'housingUnitId'), warrantType: s(f, 'warrantType'), court: s(f, 'court'), warrantRef: s(f, 'warrantRef'),
+    issuingJudicialOfficer: s(f, 'issuingJudicialOfficer'), escortingOfficer: s(f, 'escortingOfficer'), conditionAtHandover: s(f, 'conditionAtHandover'),
+    screenedByRole: s(f, 'screenedByRole'), fitForAdmission: s(f, 'screenedByRole') ? f.get('fitForAdmission') === 'on' : undefined, infectiousDiseaseFlag: f.get('infectiousDiseaseFlag') === 'on',
     warrantIssuedAt: s(f, 'warrantIssuedAt'), returnDate: s(f, 'returnDate'), offence: s(f, 'offence'), sentenceText: s(f, 'sentenceText'),
     termMonths: term ? Number(term) : undefined, latestReleaseDate: s(f, 'latestReleaseDate'),
   });
@@ -27,9 +29,28 @@ export async function initiateTransfer(f: FormData) {
   redirect(back(`/prisons/prisoners/${id}`, ok(r, `Transfer ${r.data?.reference ?? ''} initiated. It now awaits approval by an authorized officer.`)));
 }
 export async function initiateRelease(f: FormData) {
-  const id = s(f, 'episodeId')!; const r = await send('POST', '/prisons/releases', { episodeId: id, type: s(f, 'type'), legalAuthority: s(f, 'legalAuthority') });
+  const id = s(f, 'episodeId')!; const r = await send('POST', '/prisons/releases', { episodeId: id, type: s(f, 'type'), legalAuthority: s(f, 'legalAuthority'), dischargeBoardReviewed: f.get('dischargeBoardReviewed') === 'on' });
   redirect(back(`/prisons/prisoners/${id}`, ok(r, `Release ${r.data?.reference ?? ''} initiated. It now awaits authorization by a second officer.`)));
 }
+export async function renewRemand(f: FormData) {
+  const id = s(f, 'episodeId')!;
+  const r = await send('POST', `/prisons/prisoners/${id}/remand-renewals`, { court: s(f, 'court'), warrantRef: s(f, 'warrantRef'), issuingJudicialOfficer: s(f, 'issuingJudicialOfficer'), issuedAt: s(f, 'issuedAt'), returnDate: s(f, 'returnDate') });
+  redirect(back(`/prisons/prisoners/${id}`, ok(r, 'Remand warrant renewal recorded.')));
+}
+export async function setRemission(f: FormData) {
+  const id = s(f, 'episodeId')!; const r = await send('POST', `/prisons/sentences/${s(f, 'sentenceId')}/remission`, { remissionEligible: s(f, 'remissionEligible') === 'true' });
+  redirect(back(`/prisons/prisoners/${id}`, ok(r, 'Remission eligibility recorded.')));
+}
+export async function forfeitRemission(f: FormData) {
+  const id = s(f, 'episodeId')!; const days = s(f, 'days');
+  const r = await send('POST', `/prisons/sentences/${s(f, 'sentenceId')}/forfeitures`, { days: days ? Number(days) : undefined, reason: s(f, 'reason'), forfeitedOn: s(f, 'forfeitedOn') });
+  redirect(back(`/prisons/prisoners/${id}`, ok(r, 'Forfeiture of remission recorded.')));
+}
+export async function warrantReturned(f: FormData) {
+  const r = await send('POST', `/prisons/releases/${s(f, 'id')}/warrant-returned`);
+  redirect(back('/prisons/transfers', ok(r, 'Warrant recorded as returned to the issuing court.')));
+}
+
 export async function enroll(f: FormData) {
   const id = s(f, 'episodeId')!; const r = await send('POST', '/prisons/rehabilitation/enrollments', { episodeId: id, programmeId: s(f, 'programmeId') });
   redirect(back(`/prisons/prisoners/${id}`, ok(r, 'Enrolled in programme.')));

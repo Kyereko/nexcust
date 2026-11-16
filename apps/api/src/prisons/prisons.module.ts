@@ -100,14 +100,15 @@ export class PrisonsController {
   async prisoner(@Req() req: AuthedRequest, @Param('episodeId', ParseUUIDPipe) id: string) {
     const ep = await this.prisma.prisonCustodyEpisode.findUnique({ where: { id },
       include: { facility: { include: { orgUnit: true, housingUnits: { orderBy: { code: 'asc' } }, rehabProgrammes: { where: { active: true }, orderBy: { name: 'asc' } } } }, housingUnit: true, admission: { include: { courtOrder: true, facility: { select: { name: true } } } }, transfers: { include: { fromFacility: { select: { name: true } }, toFacility: { select: { name: true } } } }, release: true,
-        prisonerRecord: { include: { person: true, sentences: true, enrollments: { include: { programme: true } } } } } });
+        prisonerRecord: { include: { person: true, sentences: { include: { forfeitures: { orderBy: { forfeitedOn: 'asc' } } } }, enrollments: { include: { programme: true } } } } } });
     if (!ep) throw new NotFoundException();
     if (!inScope(req.scope!, ep.facility.orgUnit.path)) {
       await this.audit.record(req, { action: 'access.denied', outcome: 'DENIED', permission: 'prisons.prisoner.read', entityType: 'prison_custody_episode', entityId: id, detail: { reason: 'outside_jurisdiction' } });
       throw new ForbiddenException('This record is outside your jurisdiction');
     }
     await this.audit.record(req, { action: 'prisons.prisoner.view', outcome: 'SUCCESS', entityType: 'prison_custody_episode', entityId: id });
-    return ep;
+    const remandWarrants = await this.prisma.courtOrder.findMany({ where: { personId: ep.prisonerRecord.personId, type: { in: ['REMAND_COMMITMENT_FOR_TRIAL', 'REMAND_WARRANT'] } }, orderBy: { issuedAt: 'desc' } });
+    return { ...ep, remandWarrants };
   }
 
   @Get('personnel')

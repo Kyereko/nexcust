@@ -128,6 +128,19 @@ enum PoliceCustodyStatus {
   CLOSED_OTHER
 }
 
+/// Act 30 ss.10, 12 (docs/research/11, K-01)
+enum ArrestBasis {
+  WARRANT
+  WITHOUT_WARRANT_S10
+  PRIVATE_PERSON_S12
+}
+
+/// Act 30 s.15(2): report back to a court or to a police station
+enum BailReportTo {
+  COURT
+  POLICE_STATION
+}
+
 enum CustodyMovementType {
   CELL_ASSIGNMENT
   STATION_TRANSFER
@@ -154,7 +167,16 @@ enum CertificateStatus {
   EXPIRED
 }
 
+/// Values aligned to the Act 30 Second Schedule forms (docs/research/12, P-01). REMAND_WARRANT and
+/// COMMITTAL_WARRANT are legacy values kept for earlier records; new records use the form-aligned values.
 enum CourtOrderType {
+  REMAND_COMMITMENT_FOR_TRIAL // Form 14
+  COMMITMENT_TO_UNDERGO_SENTENCE // Form 21
+  COMMITMENT_ON_DEFAULT_OF_PAYMENT // Form 24
+  DISCHARGE_WARRANT // Form 25
+  ORDER_TO_PRODUCE_PRISONER // Form 9, s.86
+  RELEASE_ON_BAIL_ORDER // s.98
+  JUVENILE_DETENTION_ORDER // Act 653
   REMAND_WARRANT
   COMMITTAL_WARRANT
   PRODUCTION_ORDER
@@ -165,6 +187,7 @@ enum CourtOrderType {
 }
 
 enum PrisonerClassification {
+  DEFAULTER
   REMAND
   CONVICTED
   CONDEMNED
@@ -190,6 +213,13 @@ enum TransferStatus {
 }
 
 enum ReleaseType {
+  END_OF_SENTENCE_WITH_REMISSION
+  RELEASE_ON_BAIL_ORDER
+  DISCHARGE_WARRANT
+  PARDON_FREE
+  PARDON_CONDITIONAL
+  PUNISHMENT_REMITTED
+  AMNESTY
   SENTENCE_SERVED
   BAIL
   COURT_ORDER
@@ -246,16 +276,16 @@ model Region {
 
 /// Configurable tier in a command hierarchy (e.g. NATIONAL_HQ, REGIONAL_COMMAND, DIVISION, DISTRICT, STATION).
 model OrgUnitType {
-  id                 String             @id @default(uuid()) @db.Uuid
-  institutionId      String             @db.Uuid
-  institution        Institution        @relation(fields: [institutionId], references: [id], onDelete: Restrict)
+  id                 String               @id @default(uuid()) @db.Uuid
+  institutionId      String               @db.Uuid
+  institution        Institution          @relation(fields: [institutionId], references: [id], onDelete: Restrict)
   code               String
   name               String
   level              Int
-  verificationStatus VerificationStatus @default(UNCONFIRMED)
+  verificationStatus VerificationStatus   @default(UNCONFIRMED)
   sourceRef          String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
   units              OrganizationalUnit[]
 
   @@unique([institutionId, code])
@@ -284,16 +314,16 @@ model OrganizationalUnit {
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
-  facilities            Facility[]
-  roleAssignments       UserRoleAssignment[]
-  policePersonnel       PolicePersonnel[]
-  policePostingsTo      PolicePosting[]           @relation("PolicePostingTo")
-  policePostingsFrom    PolicePosting[]           @relation("PolicePostingFrom")
-  policeCommands        PoliceCommandAssignment[]
-  prisonPersonnel       PrisonPersonnel[]
-  prisonPostingsTo      PrisonPosting[]           @relation("PrisonPostingTo")
-  prisonPostingsFrom    PrisonPosting[]           @relation("PrisonPostingFrom")
-  prisonCommands        PrisonCommandAssignment[]
+  facilities         Facility[]
+  roleAssignments    UserRoleAssignment[]
+  policePersonnel    PolicePersonnel[]
+  policePostingsTo   PolicePosting[]           @relation("PolicePostingTo")
+  policePostingsFrom PolicePosting[]           @relation("PolicePostingFrom")
+  policeCommands     PoliceCommandAssignment[]
+  prisonPersonnel    PrisonPersonnel[]
+  prisonPostingsTo   PrisonPosting[]           @relation("PrisonPostingTo")
+  prisonPostingsFrom PrisonPosting[]           @relation("PrisonPostingFrom")
+  prisonCommands     PrisonCommandAssignment[]
 
   @@index([path])
   @@index([institutionId, typeId])
@@ -337,20 +367,20 @@ model Facility {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
-  housingUnits        HousingUnit[]
-  incidents           PoliceIncident[]
-  cases               PoliceCase[]
-  arrests             Arrest[]
-  policeCustody       PoliceCustodyEpisode[]
-  movementsFrom       CustodyMovement[]       @relation("MovementFrom")
-  movementsTo         CustodyMovement[]       @relation("MovementTo")
-  prisonAdmissions    PrisonAdmission[]
-  prisonCustody       PrisonCustodyEpisode[]
-  transfersFrom       PrisonTransfer[]        @relation("TransferFrom")
-  transfersTo         PrisonTransfer[]        @relation("TransferTo")
-  prisonReleases      PrisonRelease[]
-  prisonIncidents     PrisonIncident[]
-  rehabProgrammes     RehabilitationProgramme[]
+  housingUnits     HousingUnit[]
+  incidents        PoliceIncident[]
+  cases            PoliceCase[]
+  arrests          Arrest[]
+  policeCustody    PoliceCustodyEpisode[]
+  movementsFrom    CustodyMovement[]         @relation("MovementFrom")
+  movementsTo      CustodyMovement[]         @relation("MovementTo")
+  prisonAdmissions PrisonAdmission[]
+  prisonCustody    PrisonCustodyEpisode[]
+  transfersFrom    PrisonTransfer[]          @relation("TransferFrom")
+  transfersTo      PrisonTransfer[]          @relation("TransferTo")
+  prisonReleases   PrisonRelease[]
+  prisonIncidents  PrisonIncident[]
+  rehabProgrammes  RehabilitationProgramme[]
 
   @@index([orgUnitId])
   @@index([institutionId])
@@ -423,16 +453,16 @@ model Appointment {
 // ───────────────────────── Shared: identity & access ─────────────────────────
 
 model User {
-  id                  String     @id @default(uuid()) @db.Uuid
-  email               String     @unique
-  displayName         String
-  passwordHash        String
-  status              UserStatus @default(ACTIVE)
-  failedLoginCount    Int        @default(0)
-  lockedUntil         DateTime?
-  lastLoginAt         DateTime?
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  id               String     @id @default(uuid()) @db.Uuid
+  email            String     @unique
+  displayName      String
+  passwordHash     String
+  status           UserStatus @default(ACTIVE)
+  failedLoginCount Int        @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   sessions        Session[]
   roleAssignments UserRoleAssignment[]
@@ -444,15 +474,15 @@ model User {
 
 /// Server-managed session. Only the SHA-256 of the cookie token is stored.
 model Session {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @db.Uuid
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash  String    @unique
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime  @default(now())
-  expiresAt  DateTime
-  revokedAt  DateTime?
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
 
   @@index([userId])
   @@map("sessions")
@@ -619,16 +649,16 @@ model ApprovalRequest {
 
 /// Authorized cross-institution information exchange: every lookup has a purpose and is logged.
 model DataExchangeRequest {
-  id                   String   @id @default(uuid()) @db.Uuid
+  id                    String   @id @default(uuid()) @db.Uuid
   requestingInstitution String
-  providingInstitution String
-  personId             String   @db.Uuid
-  purpose              String
-  legalBasis           String?
-  requestedById        String   @db.Uuid
-  status               String   @default("FULFILLED")
-  disclosedSummary     Json?
-  createdAt            DateTime @default(now())
+  providingInstitution  String
+  personId              String   @db.Uuid
+  purpose               String
+  legalBasis            String?
+  requestedById         String   @db.Uuid
+  status                String   @default("FULFILLED")
+  disclosedSummary      Json?
+  createdAt             DateTime @default(now())
 
   @@index([personId])
   @@map("data_exchange_requests")
@@ -662,24 +692,24 @@ model PolicePersonnel {
 }
 
 model PolicePosting {
-  id              String              @id @default(uuid()) @db.Uuid
-  personnelId     String              @db.Uuid
-  personnel       PolicePersonnel     @relation(fields: [personnelId], references: [id], onDelete: Restrict)
-  fromOrgUnitId   String?             @db.Uuid
-  fromOrgUnit     OrganizationalUnit? @relation("PolicePostingFrom", fields: [fromOrgUnitId], references: [id], onDelete: Restrict)
-  toOrgUnitId     String              @db.Uuid
-  toOrgUnit       OrganizationalUnit  @relation("PolicePostingTo", fields: [toOrgUnitId], references: [id], onDelete: Restrict)
-  status          PostingStatus       @default(PROPOSED)
-  reason          String?
-  initiatedById   String?             @db.Uuid
-  approvedById    String?             @db.Uuid
-  approvedAt      DateTime?
-  confirmedById   String?             @db.Uuid
-  confirmedAt     DateTime?
-  effectiveFrom   DateTime?
-  effectiveTo     DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id            String              @id @default(uuid()) @db.Uuid
+  personnelId   String              @db.Uuid
+  personnel     PolicePersonnel     @relation(fields: [personnelId], references: [id], onDelete: Restrict)
+  fromOrgUnitId String?             @db.Uuid
+  fromOrgUnit   OrganizationalUnit? @relation("PolicePostingFrom", fields: [fromOrgUnitId], references: [id], onDelete: Restrict)
+  toOrgUnitId   String              @db.Uuid
+  toOrgUnit     OrganizationalUnit  @relation("PolicePostingTo", fields: [toOrgUnitId], references: [id], onDelete: Restrict)
+  status        PostingStatus       @default(PROPOSED)
+  reason        String?
+  initiatedById String?             @db.Uuid
+  approvedById  String?             @db.Uuid
+  approvedAt    DateTime?
+  confirmedById String?             @db.Uuid
+  confirmedAt   DateTime?
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   @@index([personnelId])
   @@map("police_postings")
@@ -719,39 +749,39 @@ model PoliceCommandAssignment {
 }
 
 model PoliceIncident {
-  id            String         @id @default(uuid()) @db.Uuid
-  reference     String         @unique
-  facilityId    String         @db.Uuid
-  facility      Facility       @relation(fields: [facilityId], references: [id], onDelete: Restrict)
-  reportedAt    DateTime
-  category      String
-  summary       String
-  location      String?
-  status        IncidentStatus @default(REPORTED)
-  recordedById  String?        @db.Uuid
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  cases         PoliceCase[]
+  id           String         @id @default(uuid()) @db.Uuid
+  reference    String         @unique
+  facilityId   String         @db.Uuid
+  facility     Facility       @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  reportedAt   DateTime
+  category     String
+  summary      String
+  location     String?
+  status       IncidentStatus @default(REPORTED)
+  recordedById String?        @db.Uuid
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  cases        PoliceCase[]
 
   @@index([facilityId])
   @@map("police_incidents")
 }
 
 model PoliceCase {
-  id           String          @id @default(uuid()) @db.Uuid
-  caseNumber   String          @unique
-  facilityId   String          @db.Uuid
-  facility     Facility        @relation(fields: [facilityId], references: [id], onDelete: Restrict)
-  incidentId   String?         @db.Uuid
-  incident     PoliceIncident? @relation(fields: [incidentId], references: [id], onDelete: Restrict)
-  title        String
+  id              String          @id @default(uuid()) @db.Uuid
+  caseNumber      String          @unique
+  facilityId      String          @db.Uuid
+  facility        Facility        @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  incidentId      String?         @db.Uuid
+  incident        PoliceIncident? @relation(fields: [incidentId], references: [id], onDelete: Restrict)
+  title           String
   offenceCategory String
-  status       CaseStatus      @default(OPEN)
-  openedAt     DateTime
-  closedAt     DateTime?
-  investigatorId String?       @db.Uuid
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  status          CaseStatus      @default(OPEN)
+  openedAt        DateTime
+  closedAt        DateTime?
+  investigatorId  String?         @db.Uuid
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   persons     CasePerson[]
   arrests     Arrest[]
@@ -778,24 +808,31 @@ model CasePerson {
 
 /// An arrest is an event, not a finding of guilt.
 model Arrest {
-  id              String      @id @default(uuid()) @db.Uuid
-  reference       String      @unique
-  personId        String      @db.Uuid
-  person          Person      @relation(fields: [personId], references: [id], onDelete: Restrict)
-  facilityId      String      @db.Uuid
-  facility        Facility    @relation(fields: [facilityId], references: [id], onDelete: Restrict)
-  caseId          String?     @db.Uuid
-  case            PoliceCase? @relation(fields: [caseId], references: [id], onDelete: Restrict)
-  arrestedAt      DateTime
-  location        String?
-  suspectedOffence String
-  legalAuthority  String?
-  arrestingOfficerId String?  @db.Uuid
-  recordedById    String?     @db.Uuid
-  voidedAt        DateTime?
-  voidReason      String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                   String       @id @default(uuid()) @db.Uuid
+  reference            String       @unique
+  personId             String       @db.Uuid
+  person               Person       @relation(fields: [personId], references: [id], onDelete: Restrict)
+  facilityId           String       @db.Uuid
+  facility             Facility     @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  caseId               String?      @db.Uuid
+  case                 PoliceCase?  @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  arrestedAt           DateTime
+  location             String?
+  suspectedOffence     String
+  legalAuthority       String?
+  /// Information given on arrest — Constitution art. 14(2); Act 30 ss.7, 9
+  arrestBasis          ArrestBasis?
+  warrantRef           String?
+  reasonsGivenAt       DateTime?
+  rightToLawyerGivenAt DateTime?
+  languageUsed         String?
+  lawyerRequested      Boolean      @default(false)
+  arrestingOfficerId   String?      @db.Uuid
+  recordedById         String?      @db.Uuid
+  voidedAt             DateTime?
+  voidReason           String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   custodyEpisodes PoliceCustodyEpisode[]
   charges         Charge[]
@@ -806,18 +843,18 @@ model Arrest {
 }
 
 model Charge {
-  id          String       @id @default(uuid()) @db.Uuid
-  caseId      String       @db.Uuid
-  case        PoliceCase   @relation(fields: [caseId], references: [id], onDelete: Restrict)
-  arrestId    String?      @db.Uuid
-  arrest      Arrest?      @relation(fields: [arrestId], references: [id], onDelete: Restrict)
-  personId    String       @db.Uuid
-  offence     String
-  statuteRef  String?
-  status      ChargeStatus @default(PROPOSED)
-  filedAt     DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id         String       @id @default(uuid()) @db.Uuid
+  caseId     String       @db.Uuid
+  case       PoliceCase   @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  arrestId   String?      @db.Uuid
+  arrest     Arrest?      @relation(fields: [arrestId], references: [id], onDelete: Restrict)
+  personId   String       @db.Uuid
+  offence    String
+  statuteRef String?
+  status     ChargeStatus @default(PROPOSED)
+  filedAt    DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
   conviction ConvictionRecord?
 
@@ -827,56 +864,79 @@ model Charge {
 
 /// Court outcome recorded from a court document. The ONLY basis for "has a conviction".
 model ConvictionRecord {
-  id            String      @id @default(uuid()) @db.Uuid
-  personId      String      @db.Uuid
-  person        Person      @relation(fields: [personId], references: [id], onDelete: Restrict)
-  caseId        String?     @db.Uuid
-  case          PoliceCase? @relation(fields: [caseId], references: [id], onDelete: Restrict)
-  chargeId      String?     @unique @db.Uuid
-  charge        Charge?     @relation(fields: [chargeId], references: [id], onDelete: Restrict)
-  court         String
-  courtCaseRef  String?
-  offence       String
-  convictedAt   DateTime    @db.Date
-  sentenceSummary String?
-  sourceDocumentId String?  @db.Uuid
-  recordedById  String?     @db.Uuid
-  createdAt     DateTime    @default(now())
+  id               String      @id @default(uuid()) @db.Uuid
+  personId         String      @db.Uuid
+  person           Person      @relation(fields: [personId], references: [id], onDelete: Restrict)
+  caseId           String?     @db.Uuid
+  case             PoliceCase? @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  chargeId         String?     @unique @db.Uuid
+  charge           Charge?     @relation(fields: [chargeId], references: [id], onDelete: Restrict)
+  court            String
+  courtCaseRef     String?
+  offence          String
+  convictedAt      DateTime    @db.Date
+  sentenceSummary  String?
+  sourceDocumentId String?     @db.Uuid
+  recordedById     String?     @db.Uuid
+  createdAt        DateTime    @default(now())
 
   @@index([personId])
   @@map("conviction_records")
 }
 
 model PoliceCustodyEpisode {
-  id               String              @id @default(uuid()) @db.Uuid
-  reference        String              @unique
-  personId         String              @db.Uuid
-  person           Person              @relation(fields: [personId], references: [id], onDelete: Restrict)
-  arrestId         String              @db.Uuid
-  arrest           Arrest              @relation(fields: [arrestId], references: [id], onDelete: Restrict)
-  facilityId       String              @db.Uuid
-  facility         Facility            @relation(fields: [facilityId], references: [id], onDelete: Restrict)
-  status           PoliceCustodyStatus @default(IN_CUSTODY)
-  detainedAt       DateTime
+  id                          String              @id @default(uuid()) @db.Uuid
+  reference                   String              @unique
+  personId                    String              @db.Uuid
+  person                      Person              @relation(fields: [personId], references: [id], onDelete: Restrict)
+  arrestId                    String              @db.Uuid
+  arrest                      Arrest              @relation(fields: [arrestId], references: [id], onDelete: Restrict)
+  facilityId                  String              @db.Uuid
+  facility                    Facility            @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  status                      PoliceCustodyStatus @default(IN_CUSTODY)
+  detainedAt                  DateTime
   /// Deadline for production before a court (configurable rule; 48h per Constitution art. 14(3) — to be confirmed in practice)
-  courtDeadlineAt  DateTime?
-  legalAuthority   String?
-  cellRef          String?
-  openedById       String?             @db.Uuid
-  reviewedById     String?             @db.Uuid
-  reviewedAt       DateTime?
-  closedAt         DateTime?
-  closedById       String?             @db.Uuid
-  dispositionAuthorizedById String?    @db.Uuid
-  dispositionNote  String?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  courtDeadlineAt             DateTime?
+  legalAuthority              String?
+  cellRef                     String?
+  openedById                  String?             @db.Uuid
+  reviewedById                String?             @db.Uuid
+  reviewedAt                  DateTime?
+  closedAt                    DateTime?
+  closedById                  String?             @db.Uuid
+  dispositionAuthorizedById   String?             @db.Uuid
+  dispositionNote             String?
+  /// Under 18 at arrest (Act 653): kept apart, detention order due within 48 h, parent/guardian informed
+  isJuvenile                  Boolean             @default(false)
+  juvenileDetentionOrderDueAt DateTime?
+  parentGuardianNotifiedAt    DateTime?
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
 
   movements CustodyMovement[]
+  bailBond  PoliceBailBond?
 
   @@index([facilityId, status])
   @@index([personId])
   @@map("police_custody_episodes")
+}
+
+/// Police enquiry bail as a bond under Act 30 s.15(2), s.97 (bond), s.99 (cash deposit in lieu).
+model PoliceBailBond {
+  id               String               @id @default(uuid()) @db.Uuid
+  episodeId        String               @unique @db.Uuid
+  episode          PoliceCustodyEpisode @relation(fields: [episodeId], references: [id], onDelete: Restrict)
+  amountGhs        Int
+  /// [{ name, idRef, address }]
+  sureties         Json                 @default("[]")
+  reportTo         BailReportTo
+  reportPlace      String
+  reportAt         DateTime
+  depositInLieuGhs Int?
+  grantedById      String               @db.Uuid
+  createdAt        DateTime             @default(now())
+
+  @@map("police_bail_bonds")
 }
 
 /// Immutable movement log.
@@ -937,17 +997,17 @@ model BackgroundCheckReview {
 }
 
 model ClearanceCertificate {
-  id               String                     @id @default(uuid()) @db.Uuid
-  applicationId    String                     @unique @db.Uuid
-  application      BackgroundCheckApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
-  certificateNumber String                    @unique
-  verificationCode String                     @unique
-  status           CertificateStatus          @default(VALID)
-  resultSummary    String
-  issuedById       String                     @db.Uuid
-  issuedAt         DateTime                   @default(now())
-  expiresAt        DateTime?
-  revokedAt        DateTime?
+  id                String                     @id @default(uuid()) @db.Uuid
+  applicationId     String                     @unique @db.Uuid
+  application       BackgroundCheckApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  certificateNumber String                     @unique
+  verificationCode  String                     @unique
+  status            CertificateStatus          @default(VALID)
+  resultSummary     String
+  issuedById        String                     @db.Uuid
+  issuedAt          DateTime                   @default(now())
+  expiresAt         DateTime?
+  revokedAt         DateTime?
 
   @@map("clearance_certificates")
 }
@@ -980,24 +1040,24 @@ model PrisonPersonnel {
 }
 
 model PrisonPosting {
-  id              String              @id @default(uuid()) @db.Uuid
-  personnelId     String              @db.Uuid
-  personnel       PrisonPersonnel     @relation(fields: [personnelId], references: [id], onDelete: Restrict)
-  fromOrgUnitId   String?             @db.Uuid
-  fromOrgUnit     OrganizationalUnit? @relation("PrisonPostingFrom", fields: [fromOrgUnitId], references: [id], onDelete: Restrict)
-  toOrgUnitId     String              @db.Uuid
-  toOrgUnit       OrganizationalUnit  @relation("PrisonPostingTo", fields: [toOrgUnitId], references: [id], onDelete: Restrict)
-  status          PostingStatus       @default(PROPOSED)
-  reason          String?
-  initiatedById   String?             @db.Uuid
-  approvedById    String?             @db.Uuid
-  approvedAt      DateTime?
-  confirmedById   String?             @db.Uuid
-  confirmedAt     DateTime?
-  effectiveFrom   DateTime?
-  effectiveTo     DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id            String              @id @default(uuid()) @db.Uuid
+  personnelId   String              @db.Uuid
+  personnel     PrisonPersonnel     @relation(fields: [personnelId], references: [id], onDelete: Restrict)
+  fromOrgUnitId String?             @db.Uuid
+  fromOrgUnit   OrganizationalUnit? @relation("PrisonPostingFrom", fields: [fromOrgUnitId], references: [id], onDelete: Restrict)
+  toOrgUnitId   String              @db.Uuid
+  toOrgUnit     OrganizationalUnit  @relation("PrisonPostingTo", fields: [toOrgUnitId], references: [id], onDelete: Restrict)
+  status        PostingStatus       @default(PROPOSED)
+  reason        String?
+  initiatedById String?             @db.Uuid
+  approvedById  String?             @db.Uuid
+  approvedAt    DateTime?
+  confirmedById String?             @db.Uuid
+  confirmedAt   DateTime?
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   @@index([personnelId])
   @@map("prison_postings")
@@ -1056,19 +1116,23 @@ model PrisonerRecord {
 
 /// Judicial authority for custody, transfer or release. Entered from the court document by a human.
 model CourtOrder {
-  id           String         @id @default(uuid()) @db.Uuid
-  personId     String         @db.Uuid
-  person       Person         @relation(fields: [personId], references: [id], onDelete: Restrict)
-  type         CourtOrderType
-  court        String
-  orderRef     String
-  issuedAt     DateTime       @db.Date
-  returnDate   DateTime?      @db.Date
-  details      String?
-  verifiedById String?        @db.Uuid
-  verifiedAt   DateTime?
-  documentId   String?        @db.Uuid
-  createdAt    DateTime       @default(now())
+  id                     String         @id @default(uuid()) @db.Uuid
+  personId               String         @db.Uuid
+  person                 Person         @relation(fields: [personId], references: [id], onDelete: Restrict)
+  type                   CourtOrderType
+  court                  String
+  orderRef               String
+  /// e.g. "Form 14" — Act 30 Second Schedule
+  formNumber             String?
+  issuingJudicialOfficer String?
+  issuedAt               DateTime       @db.Date
+  /// Remand: next court date. Adults ≤ 14 clear days per remand (Act 30 s.169(2)) — flagged, never auto-released
+  returnDate             DateTime?      @db.Date
+  details                String?
+  verifiedById           String?        @db.Uuid
+  verifiedAt             DateTime?
+  documentId             String?        @db.Uuid
+  createdAt              DateTime       @default(now())
 
   admissions PrisonAdmission[]
   sentences  SentenceRecord[]
@@ -1080,20 +1144,28 @@ model CourtOrder {
 }
 
 model PrisonAdmission {
-  id               String                 @id @default(uuid()) @db.Uuid
-  reference        String                 @unique
-  prisonerRecordId String                 @db.Uuid
-  prisonerRecord   PrisonerRecord         @relation(fields: [prisonerRecordId], references: [id], onDelete: Restrict)
-  facilityId       String                 @db.Uuid
-  facility         Facility               @relation(fields: [facilityId], references: [id], onDelete: Restrict)
-  courtOrderId     String                 @db.Uuid
-  courtOrder       CourtOrder             @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
-  classification   PrisonerClassification
-  admittedAt       DateTime
-  identityCheckedById String?             @db.Uuid
-  recordedById     String?                @db.Uuid
-  notes            String?
-  createdAt        DateTime               @default(now())
+  id                    String                 @id @default(uuid()) @db.Uuid
+  reference             String                 @unique
+  prisonerRecordId      String                 @db.Uuid
+  prisonerRecord        PrisonerRecord         @relation(fields: [prisonerRecordId], references: [id], onDelete: Restrict)
+  facilityId            String                 @db.Uuid
+  facility              Facility               @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  courtOrderId          String                 @db.Uuid
+  courtOrder            CourtOrder             @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
+  classification        PrisonerClassification
+  admittedAt            DateTime
+  identityCheckedById   String?                @db.Uuid
+  recordedById          String?                @db.Uuid
+  /// Gaoler's receipt (Act 30 Form 22)
+  escortingOfficer      String?
+  conditionAtHandover   String?
+  /// Reception medical screening (Prisons SOP 2.7 / 5.9 as quoted by CHRAJ)
+  medicalScreenedAt     DateTime?
+  screenedByRole        String?
+  fitForAdmission       Boolean?
+  infectiousDiseaseFlag Boolean                @default(false)
+  notes                 String?
+  createdAt             DateTime               @default(now())
 
   episode PrisonCustodyEpisode?
 
@@ -1154,43 +1226,67 @@ model PrisonTransfer {
 }
 
 model SentenceRecord {
-  id               String         @id @default(uuid()) @db.Uuid
-  prisonerRecordId String         @db.Uuid
-  prisonerRecord   PrisonerRecord @relation(fields: [prisonerRecordId], references: [id], onDelete: Restrict)
-  courtOrderId     String         @db.Uuid
-  courtOrder       CourtOrder     @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
-  offence          String
-  sentenceText     String
-  termMonths       Int?
-  sentencedAt      DateTime       @db.Date
+  id                  String         @id @default(uuid()) @db.Uuid
+  prisonerRecordId    String         @db.Uuid
+  prisonerRecord      PrisonerRecord @relation(fields: [prisonerRecordId], references: [id], onDelete: Restrict)
+  courtOrderId        String         @db.Uuid
+  courtOrder          CourtOrder     @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
+  offence             String
+  sentenceText        String
+  termMonths          Int?
+  sentencedAt         DateTime       @db.Date
   /// Dates are ENTERED by authorized staff from the warrant; the system never computes release eligibility.
-  earliestReleaseDate DateTime?   @db.Date
-  latestReleaseDate   DateTime?   @db.Date
-  recordedById     String?        @db.Uuid
-  createdAt        DateTime       @default(now())
+  earliestReleaseDate DateTime?      @db.Date
+  latestReleaseDate   DateTime?      @db.Date
+  recordedById        String?        @db.Uuid
+  /// Sentence runs from and includes the day pronounced (Act 30 s.315(2))
+  sentenceStartDate   DateTime?      @db.Date
+  /// NRCD 46 s.34: officer-determined; remission is earned and forfeitable — never computed by the system
+  remissionEligible   Boolean?
+  createdAt           DateTime       @default(now())
+
+  forfeitures RemissionForfeiture[]
 
   @@index([prisonerRecordId])
   @@map("sentence_records")
 }
 
+model RemissionForfeiture {
+  id             String         @id @default(uuid()) @db.Uuid
+  sentenceId     String         @db.Uuid
+  sentence       SentenceRecord @relation(fields: [sentenceId], references: [id], onDelete: Restrict)
+  days           Int
+  reason         String
+  forfeitedOn    DateTime       @db.Date
+  authorisedById String         @db.Uuid
+  createdAt      DateTime       @default(now())
+
+  @@index([sentenceId])
+  @@map("remission_forfeitures")
+}
+
 model PrisonRelease {
-  id            String               @id @default(uuid()) @db.Uuid
-  reference     String               @unique
-  episodeId     String               @unique @db.Uuid
-  episode       PrisonCustodyEpisode @relation(fields: [episodeId], references: [id], onDelete: Restrict)
-  facilityId    String               @db.Uuid
-  facility      Facility             @relation(fields: [facilityId], references: [id], onDelete: Restrict)
-  type          ReleaseType
-  courtOrderId  String?              @db.Uuid
-  courtOrder    CourtOrder?          @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
-  legalAuthority String
-  status        ReleaseStatus        @default(INITIATED)
-  initiatedById String?              @db.Uuid
-  approvedById  String?              @db.Uuid
-  approvedAt    DateTime?
-  releasedAt    DateTime?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  id                       String               @id @default(uuid()) @db.Uuid
+  reference                String               @unique
+  episodeId                String               @unique @db.Uuid
+  episode                  PrisonCustodyEpisode @relation(fields: [episodeId], references: [id], onDelete: Restrict)
+  facilityId               String               @db.Uuid
+  facility                 Facility             @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  type                     ReleaseType
+  courtOrderId             String?              @db.Uuid
+  courtOrder               CourtOrder?          @relation(fields: [courtOrderId], references: [id], onDelete: Restrict)
+  legalAuthority           String
+  status                   ReleaseStatus        @default(INITIATED)
+  initiatedById            String?              @db.Uuid
+  approvedById             String?              @db.Uuid
+  approvedAt               DateTime?
+  releasedAt               DateTime?
+  /// Committal warrant returned to the issuing court on release (Act 30 s.315(3))
+  warrantReturnedAt        DateTime?
+  /// Convicts: Discharge Board preparation (as quoted by CHRAJ 2021)
+  dischargeBoardReviewedAt DateTime?
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
 
   @@index([facilityId])
   @@map("prison_releases")

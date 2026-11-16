@@ -40,7 +40,8 @@ describe('Workflow A — arrest and custody', () => {
   beforeAll(async () => {
     personId = (await (await h.as(RECORDS)).post('/api/persons').send({ surname: `Detainee${uniq()}`, otherNames: 'Kofi Demo', sex: 'MALE' }).expect(201)).body.id;
   });
-  const arrest = (over: object = {}) => ({ personId, facilityId: accra1, arrestedAt: new Date(Date.now() - 3600_000).toISOString(), suspectedOffence: 'Stealing', legalAuthority: 'Arrest on reasonable suspicion (test)', detain: true, cellRef: 'Cell 2', ...over });
+  const arrest = (over: object = {}) => ({ personId, facilityId: accra1, arrestedAt: new Date(Date.now() - 3600_000).toISOString(), suspectedOffence: 'Stealing', legalAuthority: 'Arrest on reasonable suspicion (test)', detain: true, cellRef: 'Cell 2',
+    arrestBasis: 'WITHOUT_WARRANT_S10', reasonsGivenAt: new Date(Date.now() - 3500_000).toISOString(), rightToLawyerGivenAt: new Date(Date.now() - 3500_000).toISOString(), languageUsed: 'Twi', ...over });
 
   it('registers a detainee: arrest + custody episode with a court deadline, saved and searchable', async () => {
     const a = await h.as(RECORDS);
@@ -52,6 +53,24 @@ describe('Workflow A — arrest and custody', () => {
     expect(list.items.some((i: any) => i.id === custodyId)).toBe(true);
     const detail = (await a.get(`/api/police/custody/${custodyId}`).expect(200)).body;
     expect(detail.movements).toHaveLength(1);
+  });
+  it('records the rights information given at arrest and runs the 48-hour clock from the arrest', async () => {
+    const arr = await h.prisma.arrest.findFirstOrThrow({ where: { personId }, include: { custodyEpisodes: true } });
+    expect(arr).toMatchObject({ arrestBasis: 'WITHOUT_WARRANT_S10', languageUsed: 'Twi' }); expect(arr.reasonsGivenAt).not.toBeNull();
+    expect(arr.custodyEpisodes[0].courtDeadlineAt!.getTime() - arr.arrestedAt.getTime()).toBe(48 * 3600_000);
+  });
+  it('requires the warrant reference for an arrest under warrant, and rights information not dated before arrest', async () => {
+    const a = await h.as(RECORDS); const p = (await a.post('/api/persons').send({ surname: `Warrant${uniq()}`, otherNames: 'Kofi Demo', sex: 'MALE' }).expect(201)).body.id;
+    await a.post('/api/police/arrests').send(arrest({ personId: p, arrestBasis: 'WARRANT', detain: false })).expect(400);
+    await a.post('/api/police/arrests').send(arrest({ personId: p, detain: false, reasonsGivenAt: new Date(Date.now() - 7200_000).toISOString() })).expect(400);
+  });
+  it('flags a juvenile (under 18 at arrest) with a 48-hour detention-order deadline and records the parent notice', async () => {
+    const a = await h.as(RECORDS); const dob = new Date(Date.now() - 16 * 365.25 * 86400_000).toISOString().slice(0, 10);
+    const p = (await a.post('/api/persons').send({ surname: `Juvenile${uniq()}`, otherNames: 'Yaw Demo', sex: 'MALE', dateOfBirth: dob }).expect(201)).body.id;
+    const res = (await a.post('/api/police/arrests').send(arrest({ personId: p })).expect(201)).body;
+    expect(res.custody.isJuvenile).toBe(true); expect(res.custody.juvenileDetentionOrderDueAt).not.toBeNull();
+    await a.post(`/api/police/custody/${res.custody.id}/juvenile-notice`).send({ parentGuardianNotifiedAt: new Date().toISOString() }).expect(201);
+    await a.post(`/api/police/custody/${custodyId}/juvenile-notice`).send({ parentGuardianNotifiedAt: new Date().toISOString() }).expect(400); // adult
   });
   it('refuses a second open custody episode for the same person', async () => {
     await (await h.as(RECORDS)).post('/api/police/arrests').send(arrest()).expect(409);
@@ -82,9 +101,12 @@ describe('Workflow A — arrest and custody', () => {
   it('lets the station commander review and close with an authorized disposition', async () => {
     const c = await h.as(COMMANDER);
     await c.post(`/api/police/custody/${custodyId}/review`).expect(201);
-    await c.post(`/api/police/custody/${custodyId}/close`).send({ disposition: 'RELEASED_ON_BAIL', dispositionNote: 'Police enquiry bail granted (test)' }).expect(201);
-    const ep = await h.prisma.policeCustodyEpisode.findUniqueOrThrow({ where: { id: custodyId } });
-    expect(ep).toMatchObject({ status: 'RELEASED_ON_BAIL' }); expect(ep.closedAt).not.toBeNull(); expect(ep.dispositionAuthorizedById).not.toBe(ep.openedById);
+    await c.post(`/api/police/custody/${custodyId}/close`).send({ disposition: 'RELEASED_ON_BAIL', dispositionNote: 'Police enquiry bail granted (test)' }).expect(400); // bond required
+    await c.post(`/api/police/custody/${custodyId}/close`).send({ disposition: 'RELEASED_ON_BAIL', dispositionNote: 'Police enquiry bail granted (test)',
+      bailBond: { amountGhs: 5000, sureties: [{ name: 'Ama Surety', idRef: 'DEMO-GHA-SURETY-1', address: 'DEMO address, Accra' }], reportTo: 'POLICE_STATION', reportPlace: 'DEMO Accra Station 1',
+        reportAt: new Date(Date.now() + 7 * 86400_000).toISOString() } }).expect(201);
+    const ep = await h.prisma.policeCustodyEpisode.findUniqueOrThrow({ where: { id: custodyId }, include: { bailBond: true } });
+    expect(ep).toMatchObject({ status: 'RELEASED_ON_BAIL' }); expect(ep.bailBond).toMatchObject({ amountGhs: 5000, reportTo: 'POLICE_STATION' }); expect(ep.closedAt).not.toBeNull(); expect(ep.dispositionAuthorizedById).not.toBe(ep.openedById);
     await c.post(`/api/police/custody/${custodyId}/close`).send({ disposition: 'CLOSED_OTHER', dispositionNote: 'Second close' }).expect(409);
     const audit = await h.prisma.auditEvent.findFirst({ where: { action: 'police.custody.close', entityId: custodyId, outcome: 'SUCCESS' } });
     expect(audit?.actorEmail).toBe(COMMANDER);

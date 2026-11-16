@@ -27,9 +27,18 @@ export default async function NewArrest({ searchParams }: { searchParams: Promis
           <Label text="Date and time of arrest (GMT)"><input type="datetime-local" name="arrestedAt" required defaultValue={now} max={now} className={inputCls} /></Label>
           <Label text="Suspected offence"><input name="suspectedOffence" required minLength={3} maxLength={200} className={inputCls} /></Label>
           <Label text="Place of arrest"><input name="location" maxLength={200} className={inputCls} /></Label>
+          <Label text="Basis of arrest (Act 30)"><select name="arrestBasis" className={inputCls}><option value="WITHOUT_WARRANT_S10">Without warrant — s.10</option><option value="WARRANT">Under warrant</option><option value="PRIVATE_PERSON_S12">By a private person — s.12</option></select></Label>
+          <Label text="Warrant reference (if under warrant)"><input name="warrantRef" maxLength={80} className={inputCls} /></Label>
           <div className="md:col-span-2"><Label text="Legal authority for the arrest" hint="Recorded as stated by the arresting officer. The system does not assess lawfulness."><textarea name="legalAuthority" required minLength={3} maxLength={500} rows={2} className={inputCls} /></Label></div>
+          <h2 className="font-semibold text-brand md:col-span-2">Information given to the person (Constitution art. 14(2))</h2>
+          <Label text="Reasons for arrest given at (GMT)"><input type="datetime-local" name="reasonsGivenAt" required defaultValue={now} max={now} className={inputCls} /></Label>
+          <Label text="Right to a lawyer explained at (GMT)"><input type="datetime-local" name="rightToLawyerGivenAt" required defaultValue={now} max={now} className={inputCls} /></Label>
+          <Label text="Language used"><input name="languageUsed" required minLength={2} maxLength={60} placeholder="e.g. Twi, Ewe, Ga, English" className={inputCls} /></Label>
+          <label className="flex items-center gap-2 self-end pb-2 text-sm font-medium text-slate-700"><input type="checkbox" name="lawyerRequested" className="h-4 w-4" /> Person asked for a lawyer</label>
+          <h2 className="font-semibold text-brand md:col-span-2">Detention</h2>
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700"><input type="checkbox" name="detain" defaultChecked className="h-4 w-4" /> Person is detained — open a custody episode</label>
           <Label text="Cell (if detained)"><input name="cellRef" maxLength={40} placeholder="e.g. Cell 2" className={inputCls} /></Label>
+          <p className="text-xs text-slate-500 md:col-span-2">The 48-hour period for production before a court runs from the time of arrest, including weekends and public holidays. A person under 18 is flagged as a juvenile.</p>
           <div className="md:col-span-2"><Button>Register arrest</Button></div>
         </form>
       </Card>

@@ -22,9 +22,15 @@ test('Workflows D and E — admit, transfer between establishments, then release
   await expect(page.getByRole('heading', { name: 'Admit to custody' })).toBeVisible();
   await page.getByLabel('Issuing court').fill('DEMO Circuit Court A');
   await page.getByLabel('Warrant reference').fill(`DEMO-WRT-E2E-${Date.now()}`);
+  await page.getByLabel('Next court date (remand)').fill(new Date(Date.now() + 10 * 86400_000).toISOString().slice(0, 10));
+  await page.getByLabel('Received from (escorting officer)').fill('DEMO Sgt. Escort, Accra Station 1');
+  await page.getByLabel('Condition at handover').fill('Sober, no visible injuries');
+  await page.getByLabel('Screened by').selectOption('MEDICAL_OFFICER');
   await page.getByRole('button', { name: /admit/ }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Admitted as DEMO-PN-' })).toBeVisible();
   await expect(page.getByText('DEMO Ashanti Central Prison').first()).toBeVisible();
+  await expect(page.getByText(/Form 14 — remand commitment for trial/)).toBeVisible();
+  await expect(page.getByText('CURRENT', { exact: true })).toBeVisible(); // remand warrant status
   const prisonerUrl = page.url().split('?')[0];
 
   // registry is updated
@@ -71,4 +77,10 @@ test('Workflows D and E — admit, transfer between establishments, then release
   await page.goto(prisonerUrl);
   await expect(page.getByText('RELEASED', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Initiate release' })).toHaveCount(0);
+  await signOut(page);
+  // the receiving establishment's records officer returns the warrant to the issuing court
+  await signIn(page, 'prisons.records.north@nexcust.demo');
+  await page.goto('/prisons/transfers');
+  await page.getByRole('row').filter({ hasText: surname }).filter({ hasText: 'bail' }).getByRole('button', { name: 'Warrant returned to court' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'returned to the issuing court' })).toBeVisible();
 });

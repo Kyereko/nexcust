@@ -29,6 +29,7 @@ test('Workflow A — register a detainee, then the station commander authorizes 
   await page.getByRole('link', { name: 'Register arrest' }).click();
   await page.getByLabel('Suspected offence').fill('Stealing');
   await page.getByLabel('Legal authority for the arrest').fill('Arrest on reasonable suspicion (browser test)');
+  await page.getByLabel('Language used').fill('Twi');
   await page.getByLabel('Cell (if detained)').fill('Cell 1');
   await page.getByRole('button', { name: 'Register arrest' }).click();
   await expect(page.getByRole('heading', { name: /Custody episode DEMO-CUS-/ })).toBeVisible();
@@ -55,8 +56,14 @@ test('Workflow A — register a detainee, then the station commander authorizes 
   await page.getByRole('button', { name: 'Mark record as reviewed' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Supervisor review recorded' })).toBeVisible();
   await page.getByLabel('Authority and particulars').fill('Police enquiry bail granted (browser test)');
+  await page.getByLabel('Bond amount (GH₵)').fill('2000');
+  await page.getByLabel('Date and time to report (GMT)').fill(new Date(Date.now() + 7 * 86400_000).toISOString().slice(0, 16));
+  await page.getByLabel('Surety name').fill('Ama Surety (demo)');
+  await page.getByLabel('Surety ID reference').fill('DEMO-GHA-SURETY-01');
+  await page.getByLabel('Surety address').fill('DEMO address, Accra');
   await page.getByRole('button', { name: 'Authorize and close custody' }).click();
-  await expect(page.getByText('RELEASED ON BAIL')).toBeVisible();
+  await expect(page.getByText('RELEASED ON BAIL', { exact: true })).toBeVisible();
+  await expect(page.getByText(/GH₵2,000 · report to police station/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Authorize and close custody' })).toHaveCount(0);
 });
 

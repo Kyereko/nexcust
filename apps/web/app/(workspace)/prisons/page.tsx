@@ -6,14 +6,15 @@ interface Dash { population: number; remand: number; convicted: number; admissio
   facilities: Array<{ id: string; name: string; type: string; capacity: number | null; population: number; occupancyRate: number | null }> }
 
 export default async function PrisonsDashboard() {
-  const d = await api<Dash>('/prisons/dashboard');
+  const [d, remand] = await Promise.all([api<Dash>('/prisons/dashboard'), api<any>('/prisons/remand-warrants/attention')]);
+  const expired = remand.rows.filter((r: any) => r.state === 'EXPIRED').length;
   return (
     <>
       <PageHeader title="Prisons dashboard" subtitle={`Live figures for your jurisdiction · ${d.facilities.length} establishment${d.facilities.length === 1 ? '' : 's'} in scope`} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <Stat label="Population" value={d.population} hint={`Authorized capacity ${d.capacity}`} />
         <Stat label="Occupancy" value={d.occupancyRate === null ? '—' : `${d.occupancyRate}%`} tone={(d.occupancyRate ?? 0) > 100 ? 'alert' : 'default'} />
-        <Stat label="Remand" value={d.remand} /><Stat label="Convicted" value={d.convicted} />
+        <Stat label="Remand" value={d.remand} hint={expired ? `${expired} expired warrant(s) — see Remand Warrants` : 'All remand warrants current'} /><Stat label="Convicted" value={d.convicted} />
         <Stat label="Admissions (30 days)" value={d.admissions30d} /><Stat label="Releases (30 days)" value={d.releases30d} />
       </div>
       <Card className="mt-6 p-5">
