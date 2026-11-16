@@ -1,0 +1,94 @@
+import { expect, test, type Page } from '@playwright/test';
+
+const PW = process.env.DEMO_PASSWORD ?? 'Demo!Pass2026';
+async function signIn(page: Page, email: string) {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill(PW);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('heading', { name: 'Police dashboard' })).toBeVisible();
+}
+async function signOut(page: Page) { await page.getByRole('button', { name: 'Sign out' }).click(); await expect(page).toHaveURL(/\/login/); }
+
+test('Workflow A — register a detainee, then the station commander authorizes release', async ({ page }) => {
+  const surname = `Etwoe${Date.now()}`;
+  await signIn(page, 'police.records@justiceone.demo');
+
+  // 1–3: search first, create an identity record only because none exists
+  await page.getByRole('link', { name: 'People & Records' }).click();
+  await page.getByLabel('Search').fill(surname);
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByText('No records found')).toBeVisible();
+  await page.getByRole('link', { name: 'Register new person' }).click();
+  await page.getByLabel('Surname').fill(surname);
+  await page.getByLabel('Other names').fill('Kwabena Demo');
+  await page.getByRole('button', { name: /Check for existing records/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Identity record DEMO-NPI-' })).toBeVisible();
+
+  // 4–5: arrest + custody episode
+  await page.getByRole('link', { name: 'Register arrest' }).click();
+  await page.getByLabel('Suspected offence').fill('Stealing');
+  await page.getByLabel('Legal authority for the arrest').fill('Arrest on reasonable suspicion (browser test)');
+  await page.getByLabel('Cell (if detained)').fill('Cell 1');
+  await page.getByRole('button', { name: 'Register arrest' }).click();
+  await expect(page.getByRole('heading', { name: /Custody episode DEMO-CUS-/ })).toBeVisible();
+  await expect(page.getByText('IN CUSTODY')).toBeVisible();
+  const custodyUrl = page.url().split('?')[0];
+
+  // saved and searchable in the register
+  await page.getByRole('link', { name: 'Arrests & Custody' }).click();
+  await page.getByLabel('Search').fill(surname);
+  await page.getByRole('button', { name: 'Search' }).click();
+  await expect(page.getByRole('cell', { name: new RegExp(surname) })).toBeVisible();
+
+  // 7: movement; the records officer has no closing authority
+  await page.goto(custodyUrl);
+  await page.getByLabel('Note').fill('Taken to court (browser test)');
+  await page.getByRole('button', { name: 'Record movement' }).click();
+  await expect(page.getByText('Taken to court (browser test)')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Authorize and close custody' })).toHaveCount(0);
+  await signOut(page);
+
+  // 6 + 8: supervisor reviews and closes with an authorized disposition
+  await signIn(page, 'police.station@justiceone.demo');
+  await page.goto(custodyUrl);
+  await page.getByRole('button', { name: 'Mark record as reviewed' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Supervisor review recorded' })).toBeVisible();
+  await page.getByLabel('Authority and particulars').fill('Police enquiry bail granted (browser test)');
+  await page.getByRole('button', { name: 'Authorize and close custody' }).click();
+  await expect(page.getByText('RELEASED ON BAIL')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Authorize and close custody' })).toHaveCount(0);
+});
+
+test('Workflow B — officer posting: HR proposes, supervisor approves, receiving station confirms', async ({ page }) => {
+  await signIn(page, 'police.hr@justiceone.demo');
+  await page.getByRole('link', { name: 'Personnel & Postings' }).click();
+  await page.goto('/police/personnel?page=6');
+  const row = page.getByRole('row').filter({ hasText: 'DEMO Northern Station' }).first();
+  const serviceNo = (await row.getByRole('link').first().textContent())!;
+  await row.getByRole('link').first().click();
+  await expect(page.getByText(`Service no. ${serviceNo}`)).toBeVisible();
+  await page.getByLabel('Destination unit').selectOption({ label: 'DEMO Accra Station 1 — Station / Post' });
+  await page.getByLabel('Reason').fill('Service requirement (browser test)');
+  await page.getByRole('button', { name: 'Propose posting' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Posting proposed' })).toBeVisible();
+  await signOut(page);
+
+  await signIn(page, 'police.national@justiceone.demo');
+  await page.goto('/police/postings');
+  await page.getByRole('row').filter({ hasText: serviceNo }).getByRole('button', { name: 'Approve' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Posting approved' })).toBeVisible();
+  await signOut(page);
+
+  await signIn(page, 'police.station@justiceone.demo');
+  await page.goto('/police/postings');
+  await page.getByRole('row').filter({ hasText: serviceNo }).getByRole('button', { name: 'Confirm arrival' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Posting confirmed' })).toBeVisible();
+  await signOut(page);
+
+  await signIn(page, 'police.hr@justiceone.demo');
+  await page.goto(`/police/personnel?q=${serviceNo}`);
+  await page.getByRole('link', { name: serviceNo }).click();
+  await expect(page.getByRole('row').filter({ hasText: 'CURRENT' })).toContainText('DEMO Accra Station 1'); // current posting updated
+  await expect(page.getByRole('row').filter({ hasText: 'ENDED' }).filter({ hasText: 'DEMO Northern Station' }).first()).toBeVisible(); // history remains
+});

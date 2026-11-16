@@ -4,7 +4,7 @@
 
 > **DEMONSTRATION ONLY.** Synthetic data. This is not an official system of the Ghana Police Service or the Ghana Prisons Service, holds no real records, and is not connected to any government system.
 
-## What works today (Day 1 of 5)
+## What works today (Day 2 of 5)
 
 - Sign-in with server-side sessions; 15 demonstration accounts across 13 roles
 - Police and Prisons workspaces with live dashboards from the database
@@ -12,9 +12,10 @@
 - Access control by role **and** command-tree jurisdiction, enforced in the API
 - Append-only audit trail including every refused request
 - Ghana institutional reference data (ranks, appointments, unit types) with evidence status
-- 24 API security tests and 6 browser tests
+- Police workflows: person search and registration with duplicate review, arrest and custody through to authorized closure, case management, officer posting (propose → approve → confirm)
+- 41 API tests and 8 browser tests
 
-Workflow screens that create records (arrest, admission, transfer, release, posting, background check) are scheduled for Days 2–4: see `docs/03-agent-execution-plan.md`.
+Prisons workflows (admission, transfer, release) and background checks are scheduled for Days 3–4: see `docs/03-agent-execution-plan.md`.
 
 ## Structure
 
@@ -124,7 +125,8 @@ Starts PostgreSQL, runs migrations and the seed, then the API and web app. The c
 
 ## Known limitations
 
-- Read-side only so far; record-creating workflows are Days 2–4.
+- Prisons and background-check workflows are read-only until Days 3–4.
+- Browser tests write to the development database (they create synthetic persons and move one officer per run).
 - No multi-factor authentication, password reset or user-provisioning screens.
 - Sessions are stored in PostgreSQL; no idle timeout separate from the 8-hour expiry.
 - Document upload is modelled (`documents`) but not implemented.

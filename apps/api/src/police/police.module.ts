@@ -5,6 +5,9 @@ import { AuditService } from '../audit/audit.service';
 import { RequirePermission } from '../auth/decorators';
 import { AccessScope, AuthedRequest, inScope, unitWhere } from '../common/access';
 import { ListQuery, page, paging } from '../common/pagination';
+import { PoliceCustodyController } from './custody.controller';
+import { PoliceRecordsController } from './records.controller';
+import { PolicePostingsController } from './postings.controller';
 
 const POLICE = { institution: { code: 'POLICE' as const } };
 /** Facility-bound police records visible to the caller: police institution AND inside the caller's command subtree. */
@@ -107,5 +110,5 @@ export class PoliceController {
   }
 }
 
-@Module({ controllers: [PoliceController] })
+@Module({ controllers: [PoliceController, PoliceCustodyController, PoliceRecordsController, PolicePostingsController] })
 export class PoliceModule {}

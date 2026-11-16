@@ -4,7 +4,7 @@ Base path `/api`. Interactive documentation: `/api/docs` (OpenAPI). Authenticati
 
 Status codes: `401` no session · `403` refused (always audited) · `404` not found · `400` validation · `429` rate limit.
 
-## 1. Implemented (Day 1)
+## 1. Implemented (Days 1–2)
 
 | Method & path | Permission | Jurisdiction applied | Audited |
 |---|---|---|---|
@@ -20,6 +20,18 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `GET /police/cases` | `police.case.read` | unit subtree | — |
 | `GET /police/personnel` | `police.personnel.read` | unit subtree | — |
 | `GET /police/stations` | `police.facility.read` | unit subtree | — |
+| `POST /persons` | `person.write` | national | creation; duplicate review enforced (409 `POSSIBLE_DUPLICATES` / `IDENTIFIER_EXISTS`) |
+| `GET /police/persons/:id/record` | `police.case.read` | station records by subtree; convictions national | every view |
+| `POST /police/arrests` | `police.custody.write` | station must be in subtree | yes |
+| `POST /police/custody/:id/movements` | `police.custody.write` | subtree | yes |
+| `POST /police/custody/:id/review` | `police.custody.close` | subtree; not the opening officer | yes |
+| `POST /police/custody/:id/close` | `police.custody.close` | subtree; not the opening officer | yes |
+| `POST /police/cases`, `PATCH /police/cases/:id`, `GET /police/cases/:id` | `police.case.write` / `.read` | subtree | yes |
+| `GET /police/personnel/:id`, `GET /police/org-units`, `GET /police/postings` | `police.personnel.read` / `police.facility.read` | subtree | — |
+| `POST /police/postings` | `police.personnel.write` | officer's unit in subtree | yes |
+| `POST /police/postings/:id/approve` | `police.posting.approve` | releasing unit in subtree; not the initiator | yes |
+| `POST /police/postings/:id/confirm` | `police.posting.approve` | receiving unit in subtree; not the initiator | yes |
+| `POST /police/postings/:id/reject` | `police.posting.approve` | releasing or receiving unit | yes |
 | `GET /prisons/dashboard` | `prisons.dashboard.read` | unit subtree | — |
 | `GET /prisons/prisoners` | `prisons.prisoner.read` | unit subtree | — |
 | `GET /prisons/prisoners/:episodeId` | `prisons.prisoner.read` | subtree, re-checked on the record | view and refusal |
@@ -28,22 +40,12 @@ Status codes: `401` no session · `403` refused (always audited) · `404` not fo
 | `GET /admin/users` | `platform.users.manage` | platform | — |
 | `GET /audit/events` | `audit.read` | all (auditor, platform) or own institution | — |
 
-## 2. Contracted for Days 2–4 (not yet implemented)
+## 2. Contracted for Days 3–4 (not yet implemented)
 
 Every state-changing endpoint writes an audit event. "Maker–checker" means the approver must be a different user from the initiator.
 
 | Day | Method & path | Permission | Notes |
 |---|---|---|---|
-| 2 | `POST /persons` | `person.write` | Returns possible duplicates first; creation requires explicit confirmation |
-| 2 | `GET /police/persons/:id/record` | `police.case.read` | Arrests, charges, convictions as separate lists |
-| 2 | `POST /police/arrests` | `police.custody.write` | Facility must be inside caller's subtree |
-| 2 | `POST /police/custody` | `police.custody.write` | Opens episode; sets `courtDeadlineAt` from the configured rule |
-| 2 | `POST /police/custody/:id/movements` | `police.custody.write` | Append-only |
-| 2 | `POST /police/custody/:id/close` | `police.custody.close` | Disposition + authorizing officer; maker–checker |
-| 2 | `POST /police/cases`, `PATCH /police/cases/:id` | `police.case.write` | |
-| 2 | `POST /police/postings` | `police.personnel.write` | Status `PROPOSED` |
-| 2 | `POST /police/postings/:id/approve` | `police.posting.approve` | Maker–checker |
-| 2 | `POST /police/postings/:id/confirm` | `police.posting.approve` at receiving unit | Ends previous posting, updates current unit |
 | 3 | `POST /prisons/court-orders` | `prisons.prisoner.write` | Human-entered legal authority |
 | 3 | `POST /prisons/admissions` | `prisons.prisoner.write` | Requires verified court order; creates episode |
 | 3 | `POST /prisons/transfers` | `prisons.transfer.initiate` | From caller's establishment |

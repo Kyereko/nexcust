@@ -1,6 +1,7 @@
 import type { Paginated } from '@justiceone/contracts';
 import { api, qs } from '@/lib/api';
-import { Badge, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
+import Link from 'next/link';
+import { Badge, LinkButton, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
 
 interface Row { id: string; serviceNumber: string; surname: string; otherNames: string; status: string; currentRank: { name: string; abbreviation: string | null };
   currentOrgUnit: { name: string; type: { name: string } }; commands: Array<{ acting: boolean; appointment: { title: string } }> }
@@ -10,11 +11,11 @@ export async function PersonnelTable({ institution, sp }: { institution: 'police
   const data = await api<Paginated<Row>>(`/${institution}/personnel${qs({ q: sp.q, page: sp.page })}`);
   return (
     <>
-      <PageHeader title="Personnel & postings" subtitle="Rank, appointment and posting are recorded separately" />
+      <PageHeader title="Personnel & postings" subtitle="Rank, appointment and posting are recorded separately">{institution === 'police' && <LinkButton href="/police/postings">Postings in progress</LinkButton>}</PageHeader>
       <SearchBar q={sp.q} placeholder="Search by name or service number" />
       <Table head={['Service no.', 'Name', 'Rank (substantive)', 'Appointment', 'Posting (unit)', 'Status']} empty={!data.items.length}>
         {data.items.map((r) => (
-          <tr key={r.id} className="hover:bg-slate-50"><td className="font-medium">{r.serviceNumber}</td><td>{r.surname}, {r.otherNames}</td>
+          <tr key={r.id} className="hover:bg-slate-50"><td className="font-medium">{institution === 'police' ? <Link prefetch={false} className="text-blue-700 hover:underline" href={`/police/personnel/${r.id}`}>{r.serviceNumber}</Link> : r.serviceNumber}</td><td>{r.surname}, {r.otherNames}</td>
             <td>{r.currentRank.name}{r.currentRank.abbreviation ? <span className="text-slate-500"> ({r.currentRank.abbreviation})</span> : null}</td>
             <td>{r.commands.length ? r.commands.map((c) => `${c.acting ? 'Ag. ' : ''}${c.appointment.title}`).join(', ') : <span className="text-slate-400">—</span>}</td>
             <td>{r.currentOrgUnit.name}<div className="text-xs text-slate-500">{r.currentOrgUnit.type.name}</div></td><td><Badge>{r.status}</Badge></td></tr>

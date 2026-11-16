@@ -26,22 +26,24 @@ Legend: ✅ done and tested · ◻ open.
 - ✅ Permission + org-unit jurisdiction guard; refusals audited; append-only audit table
 - ✅ Application shell with five workspaces, live dashboards, custody register and detail, case register, prisoner registry and detail, personnel, stations, facilities, users, audit trail, reference-data view
 - ✅ Research pack: nine documents, evidence register, 46 stakeholder questions
-- ✅ 24 API security tests, 6 browser tests
+- ✅ 24 API security tests, 6 browser tests (now 41 and 8 with Day 2)
 
-### Day 2 — Police workflows
+### Day 2 — Police workflows (complete)
+All six items delivered with API and browser tests. Not built: a station-to-station custody transfer screen (the API supports it) and linking additional persons or charges to a case from the UI.
+
 | ID | Task | Depends on | Acceptance test |
 |---|---|---|---|
-| P-01 | Person search + create with duplicate review | — | Search existing person; create only after confirmation |
-| P-02 | Register arrest → open custody episode | P-01 | Register detainee: saved, searchable, visible only in jurisdiction |
-| P-03 | Movements, bail, court transfer, close with authorized disposition | P-02 | Status transitions; maker–checker enforced |
-| P-04 | Person police record (arrests / charges / convictions separated) | P-01 | Conviction shown only from `conviction_records` |
-| P-05 | Posting: propose → approve → confirm | — | Current posting updates; history remains |
-| P-06 | Case create / update | — | Record creation and retrieval |
+| ✅ P-01 | Person search + create with duplicate review | — | Search existing person; create only after confirmation |
+| ✅ P-02 | Register arrest → open custody episode | ✅ P-01 | Register detainee: saved, searchable, visible only in jurisdiction |
+| ✅ P-03 | Movements, bail, court transfer, close with authorized disposition | ✅ P-02 | Status transitions; maker–checker enforced |
+| ✅ P-04 | Person police record (arrests / charges / convictions separated) | ✅ P-01 | Conviction shown only from `conviction_records` |
+| ✅ P-05 | Posting: propose → approve → confirm | — | Current posting updates; history remains |
+| ✅ P-06 | Case create / update | — | Record creation and retrieval |
 
 ### Day 3 — Prisons workflows
 | ID | Task | Depends on | Acceptance test |
 |---|---|---|---|
-| R-01 | Court order entry + admission | P-01 | Register prisoner: admission saved, registry updated |
+| R-01 | Court order entry + admission | ✅ P-01 | Register prisoner: admission saved, registry updated |
 | R-02 | Transfer: initiate → approve → receive | R-01 | Both establishments reflect the transfer |
 | R-03 | Release: initiate → approve → complete | R-01 | Custody status updates with authorization history |
 | R-04 | Prison postings | P-05 pattern | As P-05 |
@@ -50,7 +52,7 @@ Legend: ✅ done and tested · ◻ open.
 ### Day 4 — Integration
 | ID | Task | Depends on | Acceptance test |
 |---|---|---|---|
-| I-01 | Background-check case processing + decision + sample certificate | P-04 | Application progresses through review |
+| I-01 | Background-check case processing + decision + sample certificate | ✅ P-04 | Application progresses through review |
 | I-02 | Certificate verification endpoint and page | I-01 | Verifiable demonstration certificate |
 | I-03 | Authorized exchange (police remand ↔ prison admission) | P-03, R-01 | Logged, purpose-bound disclosure |
 | I-04 | Reports and national roll-ups | Days 2–3 | Dashboard reflects saved records |
@@ -69,11 +71,11 @@ Rule: no new features after Day 3 unless required to finish a core scenario.
 |---|---|
 | Police login opens police workspace | ✅ automated |
 | Prison login opens prisons workspace | ✅ automated |
-| Search existing person (authorized, identity only) | ✅ API automated; screen Day 2 |
+| Search existing person (authorized, identity only) | ✅ automated (API and browser) |
 | National dashboard reflects saved records | ✅ automated |
 | Unauthorized access denied and logged | ✅ automated (API and browser) |
-| Register detainee | ◻ Day 2 |
-| Police officer transfer | ◻ Day 2 |
+| Register detainee: saved and searchable | ✅ automated (API and browser) |
+| Police officer transfer: current posting updates, history remains | ✅ automated (API and browser) |
 | Register / transfer / release prisoner | ◻ Day 3 |
 | Background-check application and certificate | ◻ Day 4 |
 

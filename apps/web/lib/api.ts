@@ -34,6 +34,18 @@ async function forwarded(): Promise<Record<string, string>> {
   return { ...(token ? { cookie: `${COOKIE}=${token}` } : {}), ...(ip ? { 'x-forwarded-for': ip } : {}) };
 }
 
+export interface SendResult<T> { ok: boolean; status: number; data: T | null; message: string; code?: string }
+
+/** State-changing call from a server action. Never throws on a refusal: the caller shows the message. */
+export async function send<T = any>(method: 'POST' | 'PATCH', path: string, body?: unknown): Promise<SendResult<T>> {
+  const res = await fetch(`${API}/api${path}`, { method, headers: { ...(await forwarded()), 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
+  if (res.status === 401) redirect('/login');
+  const data = await res.json().catch(() => null);
+  const raw = data?.message;
+  const message = res.ok ? '' : res.status === 403 ? (typeof raw === 'string' ? raw : 'You are not authorized to perform this action') : Array.isArray(raw) ? raw.join('; ') : (raw ?? `Request failed (${res.status})`);
+  return { ok: res.ok, status: res.status, data: res.ok ? data : null, message, code: data?.code };
+}
+
 /** Memoised per request (layout + page share one lookup). */
 export const getSession = cache(async (): Promise<SessionUser | null> => {
   const h = await forwarded();

@@ -6,7 +6,7 @@ export interface NavItem { label: string; href: string; permission?: Permission;
 export const NAV: Record<string, { title: string; accent: string; items: NavItem[] }> = {
   police: { title: 'POLICE', accent: 'bg-police', items: [
     { label: 'Dashboard', href: '/police', permission: 'police.dashboard.read' },
-    { label: 'People & Records', href: '/police/people', permission: 'person.read', planned: 'Day 2' },
+    { label: 'People & Records', href: '/police/people', permission: 'person.read' },
     { label: 'Arrests & Custody', href: '/police/custody', permission: 'police.custody.read' },
     { label: 'Cases & Investigations', href: '/police/cases', permission: 'police.case.read' },
     { label: 'Background Checks', href: '/police/background-checks', permission: 'police.bgcheck.read', planned: 'Day 4' },

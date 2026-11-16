@@ -3,35 +3,16 @@
  * Covers: authentication, role authorization, jurisdiction restriction, institution separation,
  * audit logging of refusals, audit immutability.
  */
-process.env.DATABASE_URL = process.env.DATABASE_URL_TEST ?? 'postgresql://justiceone:justiceone@localhost:5432/justiceone_test?schema=public';
-process.env.LOGIN_RATE_LIMIT = '1000';
-import 'reflect-metadata';
-import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { configureApp } from '../src/bootstrap';
-import { PrismaService } from '../src/prisma/prisma.module';
+import type { INestApplication } from '@nestjs/common';
+import { PW, startApp } from './harness';
+import type { PrismaService } from '../src/prisma/prisma.module';
 
-const PW = process.env.DEMO_PASSWORD ?? 'Demo!Pass2026';
 let app: INestApplication; let prisma: PrismaService;
-const agents: Record<string, ReturnType<typeof request.agent>> = {};
-
-async function as(email: string) {
-  if (!agents[email]) {
-    const a = request.agent(app.getHttpServer());
-    await a.post('/api/auth/login').send({ email, password: PW }).expect(200);
-    agents[email] = a;
-  }
-  return agents[email];
-}
+let as: Awaited<ReturnType<typeof startApp>>['as'];
 const deniedCount = (email: string) => prisma.auditEvent.count({ where: { actorEmail: email, outcome: 'DENIED' } });
 
-beforeAll(async () => {
-  const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
-  app = mod.createNestApplication(); configureApp(app); await app.init();
-  prisma = app.get(PrismaService);
-});
+beforeAll(async () => { ({ app, prisma, as } = await startApp()); });
 afterAll(async () => { await app.close(); });
 
 describe('authentication', () => {

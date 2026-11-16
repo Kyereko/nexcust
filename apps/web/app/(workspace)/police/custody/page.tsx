@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Paginated } from '@justiceone/contracts';
-import { api, fmtDateTime, qs } from '@/lib/api';
-import { Badge, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
+import { api, fmtDateTime, getSession, qs } from '@/lib/api';
+import { Badge, LinkButton, PageHeader, Pager, SearchBar, Table } from '@/components/ui';
 
 interface Row { id: string; reference: string; status: string; detainedAt: string; courtDeadlineAt: string | null; cellRef: string | null;
   person: { indexNumber: string; surname: string; otherNames: string; sex: string }; facility: { name: string }; arrest: { reference: string; suspectedOffence: string } }
@@ -13,7 +13,7 @@ export default async function CustodyRegister({ searchParams }: { searchParams: 
   const now = Date.now();
   return (
     <>
-      <PageHeader title="Arrests & custody" subtitle="Custody register for stations within your command" />
+      <PageHeader title="Arrests & custody" subtitle="Custody register for stations within your command">{(await getSession())!.permissions.includes('police.custody.write') && <LinkButton href="/police/custody/new">Register arrest</LinkButton>}</PageHeader>
       <SearchBar q={sp.q} status={sp.status} statuses={STATUSES} placeholder="Search by name or person index number" />
       <Table head={['Reference', 'Person', 'Suspected offence', 'Station', 'Detained', 'Court deadline', 'Status']} empty={!data.items.length}>
         {data.items.map((r) => {

@@ -94,3 +94,22 @@ export function Planned({ title, day, scope }: { title: string; day: string; sco
     </Card>
   );
 }
+
+/** Result banner driven by ?error= / ?notice= so server actions need no client state. */
+export function Flash({ sp }: { sp: Record<string, string | undefined> }) {
+  if (sp.error) return <p role="alert" className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{sp.error}</p>;
+  if (sp.notice) return <p role="status" className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{sp.notice}</p>;
+  return null;
+}
+
+export const inputCls = 'mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-600';
+export function Label({ text, children, hint }: { text: string; children: ReactNode; hint?: string }) {
+  return <label className="block text-sm font-medium text-slate-700">{text}{children}{hint && <span className="mt-1 block text-xs font-normal text-slate-500">{hint}</span>}</label>;
+}
+export function Button({ children, tone = 'primary' }: { children: ReactNode; tone?: 'primary' | 'secondary' | 'danger' }) {
+  const cls = { primary: 'bg-slate-900 text-white hover:bg-slate-700', secondary: 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50', danger: 'bg-red-700 text-white hover:bg-red-600' }[tone];
+  return <button type="submit" className={`rounded-md px-4 py-2 text-sm font-medium ${cls}`}>{children}</button>;
+}
+export function LinkButton({ href, children }: { href: string; children: ReactNode }) {
+  return <Link href={href} prefetch={false} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">{children}</Link>;
+}
